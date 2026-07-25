@@ -90,8 +90,13 @@ JSX is a guaranteed regret.
 
 ## Unified snapshot schema
 
-See [`sample-data/inactive-snapshot.json`](../sample-data/inactive-snapshot.json)
-for a fixture. Shape (TypeScript):
+Two sample fixtures implement this schema:
+[`sample-data/active-snapshot.json`](../sample-data/active-snapshot.json)
+(a populated, connected snapshot — mixed statuses, a failed job, a KPI
+threshold breach, for building/demoing the live UI) and
+[`sample-data/inactive-snapshot.json`](../sample-data/inactive-snapshot.json)
+(the disconnected/placeholder state, see conventions below). Shape
+(TypeScript):
 
 ```ts
 type UnifiedStatus = "succeeded" | "failed" | "running" | "queued"

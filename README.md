@@ -51,10 +51,14 @@ Open questions to settle before wiring:
 See [`docs/data-architecture.md`](docs/data-architecture.md) for a proposed
 answer to both, plus storage design, connection/auth patterns per system,
 and a polling strategy for keeping the dashboard current. It defines a
-unified snapshot schema and includes
-[`sample-data/inactive-snapshot.json`](sample-data/inactive-snapshot.json)
-— a fixture for the "nothing connected yet" state, useful for building the
-disconnected/placeholder UI before any collector exists.
+unified snapshot schema, with two sample fixtures in `sample-data/`:
+
+- [`active-snapshot.json`](sample-data/active-snapshot.json) — a populated,
+  "connected" snapshot (mixed statuses, a failed job, a threshold breach)
+  for building and demoing the live/interactive UI.
+- [`inactive-snapshot.json`](sample-data/inactive-snapshot.json) — the
+  "nothing connected yet" state, for the disconnected/placeholder UI before
+  any collector exists.
 
 ## Running locally
 
