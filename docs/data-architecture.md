@@ -13,9 +13,15 @@ ADF, Fabric, Skyvern, and Power BI get polled by a collector and written into
 a small `mc` schema in the existing warehouse:
 
 - `mc.asset_registry` — catalog of what's monitored: `asset_id`, `system`,
-  `asset_type`, `display_name`, `domain`, `schedule_cron`, `timezone`,
-  `expected_duration_ms`, `owner`, `is_enabled`. This is what distinguishes
-  *failed* from *never reported*, and is the fallback source for `nextRunAt`.
+  `asset_type`, `display_name`, `domain`, `group_name`, `schedule_cron`,
+  `timezone`, `expected_duration_ms`, `owner`, `is_enabled`, `created_at`,
+  `updated_at`. This is what distinguishes *failed* from *never reported*,
+  and is the fallback source for `nextRunAt`. **This table is mutable at
+  runtime** — see "Adding, editing, and tagging sources" below.
+- `mc.asset_tag` — `(asset_id, tag)`, one row per tag. A join table, not a
+  JSON/array column on `asset_registry`, because most SQL Server / Fabric
+  Warehouse targets don't have a native array type, and `WHERE tag IN (...)`
+  needs to stay a plain indexed join, not a JSON-parsing query.
 - `mc.asset_observation` — append-only, one row per poll. No update logic,
   history for free, nightly delete past 90 days.
 - `mc.v_asset_current` — view selecting the latest observation per asset.
@@ -120,6 +126,75 @@ this" for KPI/alert routing, which `group` (technical bucket) doesn't
 capture and shouldn't. Keep hierarchy singular and push everything else
 into tags; every tool surveyed breaks in the same way — usability collapses
 — when items get more than one structural parent.
+
+## Adding, editing, and tagging sources
+
+`mc.asset_registry` is the only thing that has to change to monitor a new
+table or pipeline — nothing about the collector, the API, or the frontend
+should require a code change or a redeploy for the common case.
+
+**Two different cases, two different costs:**
+
+- **A new asset of a system already supported** (another Azure Table, another
+  ADF pipeline, another Fabric table) — this is a **data-only change**: one
+  new row in `asset_registry` (+ rows in `asset_tag`). The existing collector
+  for that `system` picks it up on its next poll cycle automatically, because
+  every collector's query is `SELECT * FROM asset_registry WHERE system = ?
+  AND is_enabled = 1` — it never hardcodes a list of assets. Zero code,
+  zero redeploy.
+- **A genuinely new system type** (something that isn't ADF/Fabric/Skyvern/
+  Azure Table/Power BI/warehouse) — this needs one new collector module
+  following the existing interface (`fetch(asset) -> Observation`). That's a
+  real code change, but a small, additive, one-file one — never a
+  reason to touch the schema, the API, or the other collectors.
+
+**Admin API** (same backend service, same auth boundary as the read API —
+not exposed to the public internet any more than `/snapshot` is):
+
+```
+POST   /api/mission-control/assets              create
+PATCH  /api/mission-control/assets/:id           update (name, group, domain,
+                                                   schedule, owner, is_enabled)
+POST   /api/mission-control/assets/:id/tags      add a tag
+DELETE /api/mission-control/assets/:id/tags/:tag remove a tag
+GET    /api/mission-control/assets/groups        distinct group names, for
+                                                   the UI's "existing group"
+                                                   picker
+GET    /api/mission-control/assets/tags          distinct tags + counts, for
+                                                   the UI's tag suggestions
+```
+
+No `DELETE /assets/:id`. Disabling (`is_enabled = false`) is the only
+removal path — it stops the collector from polling and drops the asset from
+the snapshot, but keeps its `asset_observation` history intact. A hard
+delete would orphan history and make "why did this alert stop firing"
+unanswerable later.
+
+**Tagging happens at setup, changes in the UI.** The Add-source form (below)
+requires `group` and lets you attach `tags` before the asset is saved —
+nothing gets monitored untagged. After that, tags/group/schedule are
+editable any time from the same UI, calling the `PATCH`/tag endpoints above;
+there's no separate "re-onboarding" flow.
+
+**Frontend — Add and Edit:**
+
+- A **`+` button** next to the Pipelines search bar opens an Add-source
+  form: name, system (dropdown), asset type, domain, **group** (dropdown of
+  existing groups, or type a new one — this is the only required
+  single-parent field), **tags** (chip input: type + Enter, autocompletes
+  against existing tags but accepts new ones), schedule (optional — can be
+  filled in later once the real trigger/refresh schedule is known), owner.
+  On save: `POST /assets`, then its tags via `POST /assets/:id/tags`.
+- Every asset card gets an **Edit** affordance (in its expanded detail view)
+  that opens the same form pre-filled, diffed against the current values,
+  and calls `PATCH` + the tag endpoints on save.
+- A card's tags stay visible and removable inline (× on each chip) without
+  opening the full edit form, for the common "just drop this one tag" case.
+
+The demo console in `sample-data/` / the published artifact implements this
+against its in-memory sample data (no real backend exists yet) — same form,
+same fields, so the UI itself doesn't change when it's wired to the real
+Admin API later, only what the Save button calls.
 
 ## Unified snapshot schema
 

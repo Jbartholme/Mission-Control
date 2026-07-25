@@ -60,6 +60,13 @@ unified snapshot schema, with two sample fixtures in `sample-data/`:
   "nothing connected yet" state, for the disconnected/placeholder UI before
   any collector exists.
 
+For actually building the backend: [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md)
+is the sequenced, phase-by-phase plan (a human-readable build order with
+dependencies and "done when" checks per phase). If handing the build to an
+AI coding agent, [`docs/cursor-build-prompt.md`](docs/cursor-build-prompt.md)
+is a ready-to-paste prompt written to make the agent ask for the real
+source list, credentials, and hosting target before it generates anything.
+
 ## Running locally
 
 This is a single component, not a full app scaffold. Drop it into an
