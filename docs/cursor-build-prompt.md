@@ -106,10 +106,12 @@ don't carry a broken phase forward.
 ## Step 4 — Frontend
 
 The existing console (sample data + HTML) already implements: tabs,
-group-collapsible sections, tag-chip filtering (AND logic), search, the
-Add-source and Edit forms, and connected/disconnected states. In Phase 5,
-point it at the real `/snapshot` endpoint and wire Add/Edit to the real
-Admin API — don't rebuild the UI from scratch. If a UI piece is missing
+group-collapsible sections, tag-chip filtering (AND logic), search, and the
+Add-source (header button, Pipelines tab only) and Edit forms. It renders
+a single snapshot object — the sample data stands in for the real
+`/snapshot` response, not a toggle-able demo state. In Phase 5, point it at
+the real `/snapshot` endpoint and wire Add/Edit to the real Admin API —
+don't rebuild the UI from scratch. If a UI piece is missing
 for something the real backend needs (e.g., a field the user's source
 list has that the sample data doesn't), extend the existing console's
 form/schema rather than starting a new component.
