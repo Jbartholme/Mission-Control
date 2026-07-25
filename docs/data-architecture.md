@@ -88,6 +88,39 @@ JSX is a guaranteed regret.
 *(The "systems pulse" strip needs no array of its own — derive it from
 `pipelines[]` + `pbiDatasets[]` grouped by `domain`.)*
 
+## Grouping and tags at scale (~30+ monitored assets)
+
+At 5 hand-picked assets, `domain` was enough. Past that — 30 tables spanning
+Azure Table Storage, Fabric Tables, ADF pipelines, Fabric notebooks, and
+Skyvern jobs — a single enum stops working, since "what business area is
+this for" and "what technical bucket does this belong to" are different
+questions with different cardinality.
+
+Four established monitoring/catalog tools were checked for how they solve
+exactly this (many heterogeneous items, need to browse *and* filter):
+Grafana (folders + tags), Datadog (unified tagging + template variables),
+Azure-native (resource tags + ADF annotations + Fabric Monitoring hub
+filters), and catalog tools (Backstage's Domain/System/Component,
+PagerDuty's business/technical service hierarchy). All four converge on the
+**same two-part model**, so it's adopted as-is rather than invented fresh:
+
+- **`group` — one per asset, structural.** A single parent bucket used for
+  navigation and default organization (Grafana folder / Backstage System /
+  Azure Workbook "group" parameter). An asset has exactly one. This is what
+  puts "Azure Tables" and "Fabric Tables" in their own bucket in the UI.
+- **`tags[]` — many per asset, freeform, cross-cutting.** Flat strings,
+  optionally `key:value` (Datadog's convention — `env:prod`,
+  `cadence:hourly`) or bare (`critical-path`, `pii`). Filtering by multiple
+  tags is AND logic, matching every tool surveyed. This is what lets an
+  asset surface under "prod" and "critical-path" and "hourly" simultaneously
+  without needing three different group hierarchies.
+
+`domain` (business area) stays as a separate field — it answers "who owns
+this" for KPI/alert routing, which `group` (technical bucket) doesn't
+capture and shouldn't. Keep hierarchy singular and push everything else
+into tags; every tool surveyed breaks in the same way — usability collapses
+— when items get more than one structural parent.
+
 ## Unified snapshot schema
 
 Two sample fixtures implement this schema:
@@ -131,9 +164,11 @@ interface SectionMeta {
 
 interface PipelineCard {
   id: string; name: string;
-  system: "adf" | "fabric" | "skyvern";
-  assetType: "pipeline" | "notebook" | "job";
+  system: "adf" | "fabric" | "skyvern" | "azure_table";
+  assetType: "pipeline" | "notebook" | "job" | "table";
   domain: Domain;
+  group: string;                      // single parent bucket, e.g. "Azure Tables", "Fabric Tables", "ADF Pipelines" — structural, one per asset
+  tags: string[];                     // flat, freeform, multi-membership — "env:prod", "critical-path", "pii", "cadence:hourly"
   status: UnifiedStatus; sourceStatus: string | null; statusReason: string | null;
   lastRunAt: string | null; lastRunEndedAt: string | null; lastSuccessAt: string | null;
   durationMs: number | null; avgDurationMs: number | null; expectedDurationMs: number | null;
