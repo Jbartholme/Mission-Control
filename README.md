@@ -20,7 +20,11 @@ Single-file component: `MissionControl.jsx`. Sections, top to bottom:
   Sorts a flat `alerts` array by severity (`critical` > `warning` > `info`)
   and always leads with the worst one.
 - **`Overview`** — summary stat cards, a "systems pulse" strip (one dot per
-  monitored asset, grouped by domain), recent alerts, and a KPI snapshot.
+  monitored asset, grouped by `group`), recent alerts, and a KPI snapshot.
+- **`Datasets`** — Azure Tables, Fabric Tables, and Cubes, grouped
+  accordingly. Each card shows a record count and the delta since the prior
+  refresh; a record count of `0` is always flagged, independent of the
+  refresh job's own status.
 - **`Pipelines`** — ADF pipeline / Fabric notebook / Skyvern job status
   cards (status, last run, duration, next run).
 - **`PowerBI`** — dataset refresh cards shaped after the Power BI REST API's
@@ -36,6 +40,7 @@ no routing.
 | Section | Mock source | Real source to wire up |
 |---|---|---|
 | Pipelines | `pipelines` array | ADF pipeline-run REST API, or a landing table if one already exists |
+| Datasets | `datasets` array | Azure Table Storage / Fabric / cube row-count APIs, polled alongside refresh status |
 | Power BI | `pbiDatasets` array | Power BI REST API — Get Refresh History (per dataset or admin-scoped) |
 | Capital Markets | `capitalMarkets` array | `Cube.CapitalMarkets` warehouse view |
 | Call Center | `callCenter` array | `dbo.CallVolume` warehouse view |

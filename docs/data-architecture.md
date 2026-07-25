@@ -196,6 +196,46 @@ against its in-memory sample data (no real backend exists yet) — same form,
 same fields, so the UI itself doesn't change when it's wired to the real
 Admin API later, only what the Save button calls.
 
+## Datasets: record counts, deltas, and the "0 is an issue" rule
+
+Azure Tables, Fabric Tables, and Cubes moved out of the Pipelines tab into
+their own **Datasets** section (after Overview) — they're a different kind
+of thing to monitor. A pipeline either ran or didn't; a dataset also has a
+*size*, and a refresh that "succeeds" but leaves the table empty is a real
+failure mode that `status: "succeeded"` alone will never catch.
+
+**Record count.** `DatasetCard.recordCount` is `SELECT COUNT(*)` (or the
+source's native row-count API — Azure Table Storage and Fabric both expose
+one) run at the same cadence as the rest of that asset's polling. **A
+`recordCount` of `0` always raises a `critical` alert** (`ruleType:
+"empty_dataset"`), independent of `status`. This is deliberately not
+tied to the job/refresh status: the demonstration case in the sample data
+(`Cube.DataPlatformOps`) has `status: "succeeded"` and `recordCount: 0` at
+the same time — the refresh job didn't error, it just processed against an
+empty or truncated source. That's the exact case a job-status-only alert
+would miss.
+
+**Delta between refreshes — yes, this is straightforward.** It doesn't
+need a new table: `mc.asset_observation` (§1) is already an append-only
+row per poll. If the collector writes `recordCount` into that row alongside
+`status`, the delta is just comparing the latest observation to the one
+before it for the same `asset_id` — a `LAG(record_count) OVER (PARTITION BY
+asset_id ORDER BY observed_at)` window function, or two queries diffed in
+the API layer. `recordCountPrevious` and `recordCountDelta` in the schema
+below are that comparison, precomputed into the snapshot so the frontend
+doesn't do arithmetic. No direction is assumed to be "good" — unlike the
+KPI cards' `trendIsGood`, a shrinking table isn't necessarily bad (some
+tables are meant to shrink) — the delta is shown neutrally; `recordCount:
+0` is the one case treated as unconditionally wrong.
+
+**Cube platform tags.** Cubes come from two different platforms (Azure
+Analysis Services vs. a Fabric semantic model) that don't share a
+`system` value cleanly the way tables do. Rather than force a single enum
+split, every asset in the `Cubes` group carries a **`cube:azure` or
+`cube:fabric` tag** — same tag-chip filtering as everything else, no new
+UI concept, and it composes with `env:prod`, `critical-path`, etc. instead
+of replacing them.
+
 ## Unified snapshot schema
 
 Two sample fixtures implement this schema:
@@ -220,8 +260,9 @@ interface MissionControlSnapshot {
   generatedAt: string;                // ISO-8601 UTC
   environment: "prod" | "uat" | "dev";
   connection: { state: "connected" | "degraded" | "disconnected"; message: string | null };
-  sections: Record<"pipelines" | "pbiDatasets" | "capitalMarkets" | "callCenter", SectionMeta>;
-  pipelines: PipelineCard[];
+  sections: Record<"pipelines" | "datasets" | "pbiDatasets" | "capitalMarkets" | "callCenter", SectionMeta>;
+  pipelines: PipelineCard[];          // process-monitoring: ADF/Fabric/Skyvern runs
+  datasets: DatasetCard[];            // storage-monitoring: Azure Tables, Fabric Tables, Cubes
   pbiDatasets: PbiDatasetCard[];
   capitalMarkets: KpiCard[];
   callCenter: KpiCard[];
@@ -239,10 +280,10 @@ interface SectionMeta {
 
 interface PipelineCard {
   id: string; name: string;
-  system: "adf" | "fabric" | "skyvern" | "azure_table";
-  assetType: "pipeline" | "notebook" | "job" | "table";
+  system: "adf" | "fabric" | "skyvern";
+  assetType: "pipeline" | "notebook" | "job";
   domain: Domain;
-  group: string;                      // single parent bucket, e.g. "Azure Tables", "Fabric Tables", "ADF Pipelines" — structural, one per asset
+  group: string;                      // single parent bucket, e.g. "ADF Pipelines", "Fabric Notebooks" — structural, one per asset
   tags: string[];                     // flat, freeform, multi-membership — "env:prod", "critical-path", "pii", "cadence:hourly"
   status: UnifiedStatus; sourceStatus: string | null; statusReason: string | null;
   lastRunAt: string | null; lastRunEndedAt: string | null; lastSuccessAt: string | null;
@@ -251,6 +292,30 @@ interface PipelineCard {
   scheduleCron: string | null; timezone: string;
   runId: string | null; runUrl: string | null;
   consecutiveFailures: number; isEnabled: boolean; isStale: boolean; asOf: string | null;
+}
+
+// Same run/refresh fields as PipelineCard, plus the count that's the whole point of a
+// "dataset": a status of "succeeded" only means the refresh job didn't error — it says
+// nothing about whether the data is actually there. recordCount is the second, independent
+// signal, and it catches a real failure mode status alone can't: a refresh that completes
+// cleanly against an empty source.
+interface DatasetCard {
+  id: string; name: string;
+  system: "adf" | "fabric" | "skyvern" | "azure_table" | "azure_cube";
+  assetType: "table" | "cube";
+  domain: Domain;
+  group: string;                      // "Azure Tables" | "Fabric Tables" | "Cubes" today; open to more
+  tags: string[];                     // include "cube:azure" / "cube:fabric" on every Cubes-group asset
+  status: UnifiedStatus; sourceStatus: string | null; statusReason: string | null;
+  lastRunAt: string | null; lastRunEndedAt: string | null; lastSuccessAt: string | null;
+  durationMs: number | null; avgDurationMs: number | null; expectedDurationMs: number | null;
+  nextRunAt: string | null; nextRunSource: NextRunSource;
+  scheduleCron: string | null; timezone: string;
+  runId: string | null; runUrl: string | null;
+  consecutiveFailures: number; isEnabled: boolean; isStale: boolean; asOf: string | null;
+  recordCount: number | null;         // as of this poll — SELECT COUNT(*) or the source's row-count API
+  recordCountPrevious: number | null; // same asset's count as of the prior poll
+  recordCountDelta: number | null;    // recordCount - recordCountPrevious; null until there are two polls to diff
 }
 
 interface PbiDatasetCard {
@@ -283,11 +348,12 @@ interface KpiCard {
 interface Alert {
   id: string; severity: Severity; severityRank: number;
   title: string; message: string;
-  source: "pipelines" | "powerbi" | "capitalMarkets" | "callCenter" | "system";
+  source: "pipelines" | "datasets" | "powerbi" | "capitalMarkets" | "callCenter" | "system";
   entityId: string | null; entityName: string | null;
-  entityType: "pipeline" | "notebook" | "job" | "dataset" | "kpi" | "connection" | null;
+  entityType: "pipeline" | "notebook" | "job" | "table" | "cube" | "dataset" | "kpi" | "connection" | null;
   ruleId: string | null;
-  ruleType: "status_failed" | "threshold_breach" | "stale_data" | "connection_lost" | "duration_exceeded" | "no_recent_run";
+  ruleType: "status_failed" | "threshold_breach" | "stale_data" | "connection_lost"
+          | "duration_exceeded" | "no_recent_run" | "empty_dataset";
   observedValue: number | string | null; thresholdValue: number | string | null;
   raisedAt: string; lastSeenAt: string;
   isAcknowledged: boolean; acknowledgedBy: string | null; acknowledgedAt: string | null;
