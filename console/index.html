@@ -1,0 +1,1186 @@
+<title>Mission Control — Console</title>
+<style>
+  :root {
+    --ground: #F5F6F8;
+    --surface: #FFFFFF;
+    --surface-raised: #FBFCFD;
+    --border: #E2E5EA;
+    --border-strong: #CBD1DA;
+    --ink: #14181F;
+    --ink-muted: #5B6472;
+    --ink-faint: #88909B;
+    --accent: #1D7FA8;
+    --accent-ink: #FFFFFF;
+    --good: #1F8F5C;
+    --warning: #B57C1E;
+    --critical: #C43D44;
+    --good-bg: rgba(31,143,92,0.10);
+    --warning-bg: rgba(181,124,30,0.12);
+    --critical-bg: rgba(196,61,68,0.10);
+    --unknown-bg: rgba(91,100,114,0.10);
+    --shadow: 0 1px 2px rgba(20,24,31,0.04), 0 4px 14px rgba(20,24,31,0.05);
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Text", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0C0F14;
+      --surface: #131720;
+      --surface-raised: #171C26;
+      --border: #232935;
+      --border-strong: #323B4A;
+      --ink: #E7EAF0;
+      --ink-muted: #8A93A3;
+      --ink-faint: #5C6474;
+      --accent: #52B9E8;
+      --accent-ink: #06212E;
+      --good: #34A876;
+      --warning: #D19A3D;
+      --critical: #E0555C;
+      --good-bg: rgba(52,168,118,0.14);
+      --warning-bg: rgba(209,154,61,0.16);
+      --critical-bg: rgba(224,85,92,0.14);
+      --unknown-bg: rgba(138,147,163,0.12);
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0C0F14; --surface: #131720; --surface-raised: #171C26;
+    --border: #232935; --border-strong: #323B4A; --ink: #E7EAF0;
+    --ink-muted: #8A93A3; --ink-faint: #5C6474; --accent: #52B9E8; --accent-ink: #06212E;
+    --good: #34A876; --warning: #D19A3D; --critical: #E0555C;
+    --good-bg: rgba(52,168,118,0.14); --warning-bg: rgba(209,154,61,0.16);
+    --critical-bg: rgba(224,85,92,0.14); --unknown-bg: rgba(138,147,163,0.12);
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35); color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --ground: #F5F6F8; --surface: #FFFFFF; --surface-raised: #FBFCFD;
+    --border: #E2E5EA; --border-strong: #CBD1DA; --ink: #14181F;
+    --ink-muted: #5B6472; --ink-faint: #88909B; --accent: #1D7FA8; --accent-ink: #FFFFFF;
+    --good: #1F8F5C; --warning: #B57C1E; --critical: #C43D44;
+    --good-bg: rgba(31,143,92,0.10); --warning-bg: rgba(181,124,30,0.12);
+    --critical-bg: rgba(196,61,68,0.10); --unknown-bg: rgba(91,100,114,0.10);
+    --shadow: 0 1px 2px rgba(20,24,31,0.04), 0 4px 14px rgba(20,24,31,0.05); color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+
+  .app {
+    max-width: 560px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--ground);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+
+  /* ---------- Topbar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 30;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px 12px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .topbar-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .brand { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .brand-eyebrow {
+    font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600;
+  }
+  .brand-title { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+
+  .status-line { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-muted); }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .status-dot.on { background: var(--good); box-shadow: 0 0 0 3px var(--good-bg); }
+  .status-dot.off { background: var(--critical); box-shadow: 0 0 0 3px var(--critical-bg); }
+  .status-line .tick { font-family: var(--font-mono); color: var(--ink-faint); margin-left: auto; }
+
+  /* ---------- Alert banner ---------- */
+  .alert-banner { border-bottom: 1px solid var(--border); }
+  .alert-lead {
+    display: flex; align-items: center; gap: 10px; padding: 11px 16px;
+    cursor: pointer; user-select: none;
+  }
+  .sev-stripe { width: 4px; align-self: stretch; border-radius: 2px; flex-shrink: 0; }
+  .sev-stripe.critical { background: var(--critical); }
+  .sev-stripe.warning { background: var(--warning); }
+  .sev-stripe.info { background: var(--accent); }
+  .alert-lead-text { flex: 1; min-width: 0; }
+  .alert-lead-title { font-size: 13px; font-weight: 700; }
+  .alert-lead-msg { font-size: 12px; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .alert-count-pill {
+    font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+    background: var(--surface-raised); border: 1px solid var(--border-strong);
+    color: var(--ink-muted); padding: 2px 7px; border-radius: 999px; flex-shrink: 0;
+  }
+  .chev { color: var(--ink-faint); flex-shrink: 0; transition: transform 0.15s ease; }
+  .alert-banner.expanded .chev { transform: rotate(180deg); }
+  .alert-list { display: none; padding: 0 16px 12px; }
+  .alert-banner.expanded .alert-list { display: flex; flex-direction: column; gap: 8px; }
+  .alert-row {
+    display: flex; gap: 9px; padding: 9px 10px; border-radius: 8px; background: var(--surface-raised);
+    border: 1px solid var(--border);
+  }
+  .alert-row .alert-lead-title { font-size: 12.5px; }
+  .alert-row .alert-lead-msg { white-space: normal; font-size: 11.5px; line-height: 1.4; }
+  .alert-empty { padding: 14px 16px; font-size: 12.5px; color: var(--ink-muted); display: flex; align-items: center; gap: 8px; }
+
+  /* ---------- Tabs ---------- */
+  .tabs {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; background: var(--surface); border-bottom: 1px solid var(--border);
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    appearance: none; border: none; background: transparent; cursor: pointer;
+    font-family: var(--font-ui); font-size: 12.5px; font-weight: 600; color: var(--ink-muted);
+    padding: 11px 14px 10px; white-space: nowrap; border-bottom: 2px solid transparent;
+    flex-shrink: 0;
+  }
+  .tab-btn .n { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-faint); margin-left: 5px; }
+  .tab-btn.active { color: var(--ink); border-bottom-color: var(--accent); }
+  .tab-btn.active .n { color: var(--accent); }
+
+  main { flex: 1; padding: 14px 16px 32px; display: flex; flex-direction: column; gap: 18px; }
+  .panel { display: none; flex-direction: column; gap: 18px; }
+  .panel.active { display: flex; }
+
+  .block-label {
+    font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 700; display: flex; align-items: center; justify-content: space-between;
+  }
+
+  /* ---------- Stat cards ---------- */
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 11px 10px; display: flex; flex-direction: column; gap: 3px; box-shadow: var(--shadow);
+  }
+  .stat-value { font-family: var(--font-mono); font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .stat-value.good { color: var(--good); } .stat-value.warning { color: var(--warning); } .stat-value.critical { color: var(--critical); }
+  .stat-label { font-size: 10.5px; color: var(--ink-muted); font-weight: 600; }
+
+  /* ---------- Pulse strip ---------- */
+  .pulse-groups { display: flex; flex-direction: column; gap: 10px; }
+  .pulse-group {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow);
+  }
+  .pulse-group-head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 700; }
+  .pulse-dots { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pulse-dot {
+    width: 15px; height: 15px; border-radius: 4px; position: relative; cursor: default;
+    border: 1px solid var(--border-strong);
+  }
+  .pulse-dot.good { background: var(--good); border-color: transparent; }
+  .pulse-dot.warning { background: var(--warning); border-color: transparent; }
+  .pulse-dot.critical { background: var(--critical); border-color: transparent; }
+  .pulse-dot.unknown { background: var(--unknown-bg); }
+  .pulse-dot.unknown::after { content:"?"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:9px; color: var(--ink-faint); font-weight:700; }
+
+  /* ---------- Recent alerts (overview) ---------- */
+  .mini-alert-list { display: flex; flex-direction: column; gap: 7px; }
+
+  /* ---------- Cards (pipelines / pbi) ---------- */
+  /* ---------- Search + tag filters ---------- */
+  .search-box {
+    width: 100%; appearance: none; border: 1px solid var(--border-strong); border-radius: 9px;
+    background: var(--surface); color: var(--ink); font-family: var(--font-ui); font-size: 13px;
+    padding: 9px 11px; outline: none;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .search-box::placeholder { color: var(--ink-faint); }
+  .tag-chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag-chip {
+    appearance: none; cursor: pointer; font-family: var(--font-mono); font-size: 10.5px; font-weight: 600;
+    padding: 4px 9px; border-radius: 999px; border: 1px solid var(--border-strong);
+    background: var(--surface); color: var(--ink-muted);
+  }
+  .tag-chip.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .tag-chip .n { opacity: 0.7; margin-left: 3px; }
+  .tag-chip-clear { color: var(--accent); text-decoration: none; }
+
+  /* ---------- Add button (topbar) ---------- */
+  .add-btn {
+    appearance: none; border: none; cursor: pointer; flex-shrink: 0;
+    width: 38px; height: 38px; border-radius: 9px; background: var(--accent); color: var(--accent-ink);
+    font-size: 20px; line-height: 1; display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+  }
+  .edit-link {
+    appearance: none; border: none; background: transparent; cursor: pointer; color: var(--accent);
+    font-family: var(--font-ui); font-size: 11.5px; font-weight: 700; padding: 5px 0; display: inline-flex;
+    align-items: center; gap: 4px;
+  }
+  .asset-tag.removable { display: inline-flex; align-items: center; gap: 4px; }
+  .asset-tag.removable button {
+    appearance: none; border: none; background: transparent; color: var(--ink-faint); cursor: pointer;
+    font-family: var(--font-mono); font-size: 10px; padding: 0; line-height: 1;
+  }
+
+  /* ---------- Modal (bottom sheet on mobile) ---------- */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(10,12,16,0.5); z-index: 100;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .modal-backdrop[hidden] { display: none; }
+  .modal-sheet {
+    background: var(--surface); width: 100%; max-width: 560px; max-height: 88vh; overflow-y: auto;
+    border-radius: 16px 16px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    box-shadow: var(--shadow);
+  }
+  @media (min-width: 600px) {
+    .modal-backdrop { align-items: center; }
+    .modal-sheet { border-radius: 14px; max-height: 80vh; }
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .modal-title { font-size: 15px; font-weight: 700; }
+  .modal-close {
+    appearance: none; border: none; background: var(--surface-raised); border: 1px solid var(--border-strong);
+    color: var(--ink-muted); width: 28px; height: 28px; border-radius: 999px; cursor: pointer; font-size: 14px;
+  }
+  .form-grid { display: flex; flex-direction: column; gap: 12px; }
+  .form-field { display: flex; flex-direction: column; gap: 5px; }
+  .form-field label {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint);
+  }
+  .form-field input[type="text"], .form-field select {
+    appearance: none; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-raised);
+    color: var(--ink); font-family: var(--font-ui); font-size: 13.5px; padding: 9px 10px; outline: none;
+  }
+  .form-field input:focus, .form-field select:focus { border-color: var(--accent); }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-hint { font-size: 10.5px; color: var(--ink-faint); }
+  .tag-input-box {
+    display: flex; flex-wrap: wrap; gap: 6px; border: 1px solid var(--border-strong); border-radius: 8px;
+    background: var(--surface-raised); padding: 7px 8px;
+  }
+  .tag-input-box input {
+    border: none; background: transparent; outline: none; color: var(--ink); font-family: var(--font-mono);
+    font-size: 12px; flex: 1; min-width: 90px; padding: 2px;
+  }
+  .form-check { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink); }
+  .form-actions { display: flex; gap: 10px; margin-top: 4px; }
+  .btn {
+    flex: 1; appearance: none; border: none; cursor: pointer; border-radius: 9px; padding: 11px; font-size: 13px;
+    font-weight: 700; font-family: var(--font-ui);
+  }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-secondary { background: var(--surface-raised); color: var(--ink-muted); border: 1px solid var(--border-strong); }
+  .form-error { font-size: 11.5px; color: var(--critical); display: none; }
+  .form-error.show { display: block; }
+
+  /* ---------- Group sections ---------- */
+  .group-section { display: flex; flex-direction: column; gap: 8px; }
+  .group-header {
+    display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;
+    padding: 9px 2px; border-bottom: 1px solid var(--border);
+  }
+  .group-header .chev { margin-left: auto; }
+  .group-section.collapsed .chev { transform: rotate(-90deg); }
+  .group-section.collapsed .card-list { display: none; }
+  .group-title { font-size: 13px; font-weight: 700; }
+  .group-count { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-faint); }
+  .group-mini-dots { display: flex; gap: 3px; margin-left: 4px; }
+  .group-mini-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .group-mini-dot.good { background: var(--good); } .group-mini-dot.warning { background: var(--warning); }
+  .group-mini-dot.critical { background: var(--critical); } .group-mini-dot.unknown { background: var(--ink-faint); }
+  .asset-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+  .asset-tag {
+    font-family: var(--font-mono); font-size: 9.5px; color: var(--ink-faint); background: var(--surface-raised);
+    border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px;
+  }
+  .card-list { display: flex; flex-direction: column; gap: 9px; }
+  .asset-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 11px;
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .asset-card-head { display: flex; align-items: flex-start; gap: 10px; padding: 12px 13px; cursor: pointer; }
+  .asset-icon {
+    width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center;
+    justify-content: center; font-size: 13px; font-weight: 700; font-family: var(--font-mono);
+    background: var(--surface-raised); border: 1px solid var(--border); color: var(--ink-muted);
+  }
+  .asset-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .asset-title-row { display: flex; align-items: center; gap: 8px; }
+  .asset-name { font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em; }
+  .asset-sub { font-size: 11px; color: var(--ink-muted); display: flex; gap: 8px; flex-wrap: wrap; font-family: var(--font-mono); }
+  .pill {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em; padding: 2.5px 7px; border-radius: 5px;
+    display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  }
+  .pill.good { color: var(--good); background: var(--good-bg); }
+  .pill.warning { color: var(--warning); background: var(--warning-bg); }
+  .pill.critical { color: var(--critical); background: var(--critical-bg); }
+  .pill.unknown { color: var(--ink-muted); background: var(--unknown-bg); }
+  .pill::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  .asset-detail { display: none; padding: 0 13px 13px; border-top: 1px solid var(--border); margin-top: 0; }
+  .asset-card.expanded .asset-detail { display: block; padding-top: 11px; }
+  .asset-card.expanded .chev { transform: rotate(180deg); }
+  .kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+  .kv { display: flex; flex-direction: column; gap: 2px; }
+  .kv-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); font-weight: 700; }
+  .kv-value { font-family: var(--font-mono); font-size: 12px; color: var(--ink); }
+  .reason-box {
+    margin-top: 10px; font-size: 11.5px; line-height: 1.5; color: var(--critical);
+    background: var(--critical-bg); border-radius: 7px; padding: 8px 10px; font-family: var(--font-mono);
+  }
+
+  /* ---------- KPI tiles ---------- */
+  .kpi-groups { display: flex; flex-direction: column; gap: 18px; }
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .kpi-tile {
+    background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--border);
+    border-radius: 10px; padding: 11px 12px; display: flex; flex-direction: column; gap: 5px; box-shadow: var(--shadow);
+  }
+  .kpi-tile.warning { border-left-color: var(--warning); }
+  .kpi-tile.critical { border-left-color: var(--critical); }
+  .kpi-tile.good { border-left-color: var(--good); }
+  .kpi-label { font-size: 11px; color: var(--ink-muted); font-weight: 600; }
+  .kpi-value { font-family: var(--font-mono); font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .kpi-value.dim { color: var(--ink-faint); }
+  .kpi-trend { display: flex; align-items: center; gap: 4px; font-size: 11px; font-family: var(--font-mono); }
+  .kpi-trend.up.good-trend { color: var(--good); } .kpi-trend.down.good-trend { color: var(--good); }
+  .kpi-trend.up.bad-trend { color: var(--critical); } .kpi-trend.down.bad-trend { color: var(--critical); }
+  .kpi-trend.flat, .kpi-trend.unknown { color: var(--ink-faint); }
+  .kpi-source { font-size: 9.5px; color: var(--ink-faint); font-family: var(--font-mono); margin-top: 2px; }
+
+  footer.app-foot {
+    padding: 14px 16px 22px; border-top: 1px solid var(--border); background: var(--surface);
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .app-foot-line { font-size: 10.5px; color: var(--ink-faint); font-family: var(--font-mono); display:flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+
+  .empty-note { font-size: 12px; color: var(--ink-faint); padding: 4px 2px; }
+  a { color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="app">
+  <header class="topbar">
+    <div class="topbar-row">
+      <div class="brand">
+        <span class="brand-eyebrow">Vortex &middot; Ops Console</span>
+        <span class="brand-title">Mission Control</span>
+      </div>
+      <button type="button" class="add-btn" id="addAssetBtnHeader" aria-label="Add source" title="Add source" hidden>+</button>
+    </div>
+    <div class="status-line">
+      <span class="status-dot" id="connDot"></span>
+      <span id="connLabel">—</span>
+      <span class="tick" id="tickClock">viewer clock —</span>
+    </div>
+  </header>
+
+  <section class="alert-banner" id="alertBanner">
+    <div class="alert-lead" id="alertLead">
+      <div class="sev-stripe" id="alertStripe"></div>
+      <div class="alert-lead-text">
+        <div class="alert-lead-title" id="alertLeadTitle">—</div>
+        <div class="alert-lead-msg" id="alertLeadMsg">—</div>
+      </div>
+      <span class="alert-count-pill" id="alertCountPill">0</span>
+      <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+    </div>
+    <div class="alert-list" id="alertList"></div>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="datasets">Datasets<span class="n" id="tabNDatasets"></span></button>
+    <button class="tab-btn" data-tab="pipelines">Pipelines<span class="n" id="tabNPipelines"></span></button>
+    <button class="tab-btn" data-tab="powerbi">Power BI<span class="n" id="tabNPbi"></span></button>
+    <button class="tab-btn" data-tab="kpis">Business KPIs</button>
+  </nav>
+
+  <main>
+    <section class="panel active" id="panel-overview">
+      <div>
+        <div class="block-label">Systems Summary</div>
+        <div class="stat-grid" id="statGrid" style="margin-top:8px;"></div>
+      </div>
+      <div>
+        <div class="block-label">Systems Pulse</div>
+        <div class="pulse-groups" id="pulseGroups" style="margin-top:8px;"></div>
+      </div>
+      <div>
+        <div class="block-label">Recent Alerts</div>
+        <div class="mini-alert-list" id="miniAlertList" style="margin-top:8px;"></div>
+      </div>
+      <div>
+        <div class="block-label">KPI Snapshot</div>
+        <div class="kpi-grid" id="kpiSnapshotGrid" style="margin-top:8px;"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-datasets">
+      <input type="search" class="search-box" id="datasetSearch" placeholder="Search datasets&hellip;" autocomplete="off">
+      <div class="tag-chip-row" id="datasetTagChipRow"></div>
+      <div id="datasetGroups"></div>
+      <div class="empty-note" id="datasetEmptyNote" style="display:none;">No datasets match the current filters.</div>
+    </section>
+
+    <section class="panel" id="panel-pipelines">
+      <input type="search" class="search-box" id="pipelineSearch" placeholder="Search monitored assets&hellip;" autocomplete="off">
+      <div class="tag-chip-row" id="tagChipRow"></div>
+      <div id="pipelineGroups"></div>
+      <div class="empty-note" id="pipelineEmptyNote" style="display:none;">No assets match the current filters.</div>
+    </section>
+
+    <section class="panel" id="panel-powerbi">
+      <div class="block-label">Dataset Refresh History</div>
+      <div class="card-list" id="pbiCards"></div>
+    </section>
+
+    <section class="panel" id="panel-kpis">
+      <div class="kpi-groups">
+        <div>
+          <div class="block-label">Capital Markets &middot; Cube.CapitalMarkets</div>
+          <div class="kpi-grid" id="cmGrid" style="margin-top:8px;"></div>
+        </div>
+        <div>
+          <div class="block-label">Call Center &middot; dbo.CallVolume</div>
+          <div class="kpi-grid" id="ccGrid" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-foot">
+    <div class="app-foot-line"><span>schemaVersion <span id="footSchema">—</span></span><span id="footEnv">—</span></div>
+    <div class="app-foot-line"><span>Mission Control snapshot</span><span id="footGenAt">—</span></div>
+  </footer>
+</div>
+
+<div class="modal-backdrop" id="assetModalBackdrop" hidden>
+  <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <span class="modal-title" id="modalTitle">Add source</span>
+      <button type="button" class="modal-close" id="modalCloseBtn" aria-label="Close">&times;</button>
+    </div>
+    <div class="form-grid">
+      <div class="form-field">
+        <label for="fName">Name</label>
+        <input type="text" id="fName" placeholder="e.g. AzTbl.PaymentEvents">
+      </div>
+      <div class="form-row-2">
+        <div class="form-field">
+          <label for="fSystem">System</label>
+          <select id="fSystem">
+            <option value="adf">ADF</option>
+            <option value="fabric">Fabric</option>
+            <option value="skyvern">Skyvern</option>
+            <option value="azure_table">Azure Table</option>
+            <option value="azure_cube">Azure Cube</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="fAssetType">Asset type</label>
+          <select id="fAssetType">
+            <option value="pipeline">Pipeline</option>
+            <option value="notebook">Notebook</option>
+            <option value="job">Job</option>
+            <option value="table">Table</option>
+            <option value="cube">Cube</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-field">
+          <label for="fDomain">Domain</label>
+          <select id="fDomain">
+            <option value="capital_markets">Capital Markets</option>
+            <option value="call_center">Call Center</option>
+            <option value="servicing">Servicing</option>
+            <option value="data_platform">Data Platform</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="fGroup">Group</label>
+          <input type="text" id="fGroup" list="groupOptions" placeholder="Existing or new group">
+          <datalist id="groupOptions"></datalist>
+        </div>
+      </div>
+      <div class="form-field">
+        <label for="fTagInput">Tags</label>
+        <div class="tag-input-box" id="tagInputBox">
+          <input type="text" id="fTagInput" placeholder="type a tag, press Enter" list="tagOptions">
+        </div>
+        <datalist id="tagOptions"></datalist>
+        <span class="form-hint">Set at least one tag now — group + tags are how this asset gets found later.</span>
+      </div>
+      <div class="form-field">
+        <label for="fCron">Schedule (cron, optional)</label>
+        <input type="text" id="fCron" placeholder="e.g. 0 * * * *">
+      </div>
+      <label class="form-check"><input type="checkbox" id="fEnabled" checked> Enabled (monitored)</label>
+      <div class="form-error" id="formError">Name, system, and group are required.</div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="formCancelBtn">Cancel</button>
+        <button type="button" class="btn btn-primary" id="formSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// The production data object — this is the exact shape the real /snapshot
+// endpoint will return (see docs/data-architecture.md). No connected/disconnected
+// toggle: this console always renders the current snapshot.
+const SNAPSHOT = {"schemaVersion": "1.0", "generatedAt": "2026-07-25T14:32:10Z", "environment": "prod", "connection": {"state": "connected", "message": null}, "sections": {"pipelines": {"sourceState": "ok", "asOf": "2026-07-25T14:31:45Z", "staleAfterSeconds": 180, "isStale": false, "itemCount": 12, "error": null}, "pbiDatasets": {"sourceState": "ok", "asOf": "2026-07-25T14:28:00Z", "staleAfterSeconds": 900, "isStale": false, "itemCount": 2, "error": null}, "capitalMarkets": {"sourceState": "ok", "asOf": "2026-07-25T14:30:00Z", "staleAfterSeconds": 900, "isStale": false, "itemCount": 2, "error": null}, "callCenter": {"sourceState": "ok", "asOf": "2026-07-25T14:30:00Z", "staleAfterSeconds": 900, "isStale": false, "itemCount": 2, "error": null}, "datasets": {"sourceState": "ok", "asOf": "2026-07-25T14:31:45Z", "staleAfterSeconds": 180, "isStale": false, "itemCount": 22, "error": null}}, "pipelines": [{"id": "adf:df-prod:pl_LoanLock_Hourly", "name": "Loan Lock Hourly Load", "system": "adf", "assetType": "pipeline", "domain": "capital_markets", "group": "ADF Pipelines", "tags": ["env:prod", "cadence:hourly", "critical-path"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T14:31:10.000Z", "lastRunEndedAt": "2026-07-25T14:43:55.000Z", "lastSuccessAt": "2026-07-25T14:43:55.000Z", "durationMs": 765000, "avgDurationMs": 810000, "expectedDurationMs": 900000, "nextRunAt": "2026-07-25T14:37:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 * * * *", "timezone": "America/New_York", "runId": "adf-run-186a0", "runUrl": "https://adf.azure.com/monitoring/pipelineruns/run-0", "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z"}, {"id": "adf:df-prod:pl_InvestorDelivery_Batch", "name": "Investor Delivery Batch", "system": "adf", "assetType": "pipeline", "domain": "capital_markets", "group": "ADF Pipelines", "tags": ["env:prod", "cadence:daily", "critical-path"], "status": "running", "sourceStatus": "InProgress", "statusReason": null, "lastRunAt": "2026-07-25T13:54:10.000Z", "lastRunEndedAt": null, "lastSuccessAt": null, "durationMs": null, "avgDurationMs": 1080000, "expectedDurationMs": 1200000, "nextRunAt": "2026-07-25T14:54:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 5 * * *", "timezone": "America/New_York", "runId": "adf-run-186c5", "runUrl": "https://adf.azure.com/monitoring/pipelineruns/run-1", "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z"}, {"id": "adf:df-prod:pl_EscrowRecon", "name": "Servicing Escrow Reconciliation", "system": "adf", "assetType": "pipeline", "domain": "servicing", "group": "ADF Pipelines", "tags": ["env:prod", "cadence:daily"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T13:17:10.000Z", "lastRunEndedAt": "2026-07-25T13:45:40.000Z", "lastSuccessAt": "2026-07-25T13:45:40.000Z", "durationMs": 1710000, "avgDurationMs": 1620000, "expectedDurationMs": 1800000, "nextRunAt": "2026-07-25T15:11:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 4 * * *", "timezone": "America/New_York", "runId": "adf-run-186ea", "runUrl": "https://adf.azure.com/monitoring/pipelineruns/run-2", "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z"}, {"id": "adf:df-prod:pl_RosterSync", "name": "Call Center Roster Sync", "system": "adf", "assetType": "pipeline", "domain": "call_center", "group": "ADF Pipelines", "tags": ["env:prod", "cadence:hourly"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T12:40:10.000Z", "lastRunEndedAt": "2026-07-25T12:45:10.000Z", "lastSuccessAt": "2026-07-25T12:45:10.000Z", "durationMs": 300000, "avgDurationMs": 270000, "expectedDurationMs": 300000, "nextRunAt": "2026-07-25T15:28:10.000Z", "nextRunSource": "trigger", "scheduleCron": "15 * * * *", "timezone": "America/New_York", "runId": "adf-run-1870f", "runUrl": "https://adf.azure.com/monitoring/pipelineruns/run-3", "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z"}, {"id": "adf:df-prod:pl_RateSheetIngestion", "name": "Rate Sheet Ingestion", "system": "adf", "assetType": "pipeline", "domain": "capital_markets", "group": "ADF Pipelines", "tags": ["env:prod", "cadence:hourly", "critical-path"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T12:03:10.000Z", "lastRunEndedAt": "2026-07-25T12:10:31.000Z", "lastSuccessAt": "2026-07-25T12:10:31.000Z", "durationMs": 441000, "avgDurationMs": 378000, "expectedDurationMs": 420000, "nextRunAt": "2026-07-25T15:45:10.000Z", "nextRunSource": "trigger", "scheduleCron": "5 * * * *", "timezone": "America/New_York", "runId": "adf-run-18734", "runUrl": "https://adf.azure.com/monitoring/pipelineruns/run-4", "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z"}, {"id": "adf:df-prod:pl_ComplianceExtract", "name": "Compliance Audit Extract", "system": "adf", "assetType": "pipeline", "domain": "servicing", "group": "ADF Pipelines", "tags": ["env:prod", "cadence:daily", "pii"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T14:26:10.000Z", "lastRunEndedAt": "2026-07-25T14:38:55.000Z", "lastSuccessAt": "2026-07-25T14:38:55.000Z", "durationMs": 765000, "avgDurationMs": 810000, "expectedDurationMs": 900000, "nextRunAt": "2026-07-25T16:02:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 3 * * *", "timezone": "America/New_York", "runId": "adf-run-18759", "runUrl": "https://adf.azure.com/monitoring/pipelineruns/run-5", "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z"}, {"id": "fabric:ws-analytics:nb_CallVolume_Nightly", "name": "Call Volume Nightly Aggregation", "system": "fabric", "assetType": "notebook", "domain": "call_center", "group": "Fabric Notebooks", "tags": ["env:prod", "cadence:nightly"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T13:49:10.000Z", "lastRunEndedAt": "2026-07-25T13:58:10.000Z", "lastSuccessAt": "2026-07-25T13:58:10.000Z", "durationMs": 540000, "avgDurationMs": 540000, "expectedDurationMs": 600000, "nextRunAt": "2026-07-25T14:49:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 2 * * *", "timezone": "America/New_York", "runId": "fabric-run-1877e", "runUrl": "https://app.fabric.microsoft.com/workspaces/ws-analytics/runs/run-6", "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z"}, {"id": "fabric:ws-analytics:nb_RiskRollup", "name": "Capital Markets Risk Rollup", "system": "fabric", "assetType": "notebook", "domain": "capital_markets", "group": "Fabric Notebooks", "tags": ["env:prod", "cadence:nightly", "critical-path"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T13:12:10.000Z", "lastRunEndedAt": "2026-07-25T13:26:25.000Z", "lastSuccessAt": "2026-07-25T13:26:25.000Z", "durationMs": 855000, "avgDurationMs": 810000, "expectedDurationMs": 900000, "nextRunAt": "2026-07-25T15:06:10.000Z", "nextRunSource": "trigger", "scheduleCron": "30 2 * * *", "timezone": "America/New_York", "runId": "fabric-run-187a3", "runUrl": "https://app.fabric.microsoft.com/workspaces/ws-analytics/runs/run-7", "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z"}, {"id": "fabric:ws-analytics:nb_DelinquencyScoring", "name": "Servicing Delinquency Scoring", "system": "fabric", "assetType": "notebook", "domain": "servicing", "group": "Fabric Notebooks", "tags": ["env:prod", "cadence:nightly"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T12:35:10.000Z", "lastRunEndedAt": "2026-07-25T13:00:10.000Z", "lastSuccessAt": "2026-07-25T13:00:10.000Z", "durationMs": 1500000, "avgDurationMs": 1350000, "expectedDurationMs": 1500000, "nextRunAt": "2026-07-25T15:23:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 3 * * *", "timezone": "America/New_York", "runId": "fabric-run-187c8", "runUrl": "https://app.fabric.microsoft.com/workspaces/ws-analytics/runs/run-8", "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z"}, {"id": "skyvern:job_RateSheet_Scrape", "name": "Rate Sheet Scrape", "system": "skyvern", "assetType": "job", "domain": "capital_markets", "group": "Skyvern Jobs", "tags": ["env:prod", "cadence:30min", "critical-path"], "status": "failed", "sourceStatus": "Failed", "statusReason": "Target page layout changed \u2014 selector 'div.rate-table' not found after 3 retries.", "lastRunAt": "2026-07-25T11:58:10.000Z", "lastRunEndedAt": "2026-07-25T11:59:13.000Z", "lastSuccessAt": "2026-07-25T10:58:10.000Z", "durationMs": 63000, "avgDurationMs": 162000, "expectedDurationMs": 180000, "nextRunAt": "2026-07-25T15:40:10.000Z", "nextRunSource": "trigger", "scheduleCron": "*/30 * * * *", "timezone": "America/New_York", "runId": "skyvern-run-187ed", "runUrl": "https://app.skyvern.com/runs/run-9", "consecutiveFailures": 2, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z"}, {"id": "skyvern:job_CompetitorPricing", "name": "Competitor Pricing Scrape", "system": "skyvern", "assetType": "job", "domain": "capital_markets", "group": "Skyvern Jobs", "tags": ["env:prod", "cadence:daily"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T14:21:10.000Z", "lastRunEndedAt": "2026-07-25T14:24:34.000Z", "lastSuccessAt": "2026-07-25T14:24:34.000Z", "durationMs": 204000, "avgDurationMs": 216000, "expectedDurationMs": 240000, "nextRunAt": "2026-07-25T15:57:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 6 * * *", "timezone": "America/New_York", "runId": "skyvern-run-18812", "runUrl": "https://app.skyvern.com/runs/run-10", "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z"}, {"id": "skyvern:job_InvestorPortalCheck", "name": "Investor Portal Status Check", "system": "skyvern", "assetType": "job", "domain": "servicing", "group": "Skyvern Jobs", "tags": ["env:uat", "cadence:hourly"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T13:44:10.000Z", "lastRunEndedAt": "2026-07-25T13:45:31.000Z", "lastSuccessAt": "2026-07-25T13:45:31.000Z", "durationMs": 81000, "avgDurationMs": 81000, "expectedDurationMs": 90000, "nextRunAt": "2026-07-25T14:44:10.000Z", "nextRunSource": "trigger", "scheduleCron": "20 * * * *", "timezone": "America/New_York", "runId": "skyvern-run-18837", "runUrl": "https://app.skyvern.com/runs/run-11", "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z"}], "pbiDatasets": [{"id": "00000000-0000-0000-0000-000000000001", "name": "Capital Markets Executive Dashboard", "workspaceId": "00000000-0000-0000-0000-0000000000a1", "workspaceName": "Capital Markets", "domain": "capital_markets", "status": "succeeded", "sourceStatus": "Completed", "refreshType": "Scheduled", "startTime": "2026-07-25T12:00:02Z", "endTime": "2026-07-25T12:04:31Z", "durationMs": 269000, "lastSuccessAt": "2026-07-25T12:04:31Z", "nextRefreshAt": "2026-07-25T17:00:00Z", "refreshSchedule": {"enabled": true, "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "times": ["06:00", "12:00"], "timeZone": "Eastern Standard Time"}, "refreshesUsedToday": 2, "refreshLimitPerDay": 8, "errorCode": null, "errorMessage": null, "requestId": "req-3a1c9e", "datasetUrl": "https://app.powerbi.com/groups/a1/datasets/00000000-0000-0000-0000-000000000001", "isConfiguredRefresh": true, "consecutiveFailures": 0, "isStale": false, "asOf": "2026-07-25T14:28:00Z"}, {"id": "00000000-0000-0000-0000-000000000002", "name": "Call Center Operations", "workspaceId": "00000000-0000-0000-0000-0000000000a2", "workspaceName": "Call Center", "domain": "call_center", "status": "succeeded", "sourceStatus": "Completed", "refreshType": "Scheduled", "startTime": "2026-07-25T07:00:04Z", "endTime": "2026-07-25T07:03:52Z", "durationMs": 228000, "lastSuccessAt": "2026-07-25T07:03:52Z", "nextRefreshAt": "2026-07-26T07:00:00Z", "refreshSchedule": {"enabled": true, "days": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], "times": ["07:00"], "timeZone": "Eastern Standard Time"}, "refreshesUsedToday": 1, "refreshLimitPerDay": 8, "errorCode": null, "errorMessage": null, "requestId": "req-7c02f1", "datasetUrl": "https://app.powerbi.com/groups/a2/datasets/00000000-0000-0000-0000-000000000002", "isConfiguredRefresh": true, "consecutiveFailures": 0, "isStale": false, "asOf": "2026-07-25T14:28:00Z"}], "capitalMarkets": [{"id": "cm.locked_volume_mtd", "label": "Locked Volume (MTD)", "domain": "capital_markets", "value": 284500000, "unit": "usd", "formatHint": "currencyCompact", "previousValue": 261200000, "comparisonLabel": "vs prior month", "changeAbsolute": 23300000, "changePercent": 8.92, "trend": "up", "trendIsGood": true, "threshold": {"warning": 200000000, "critical": 150000000, "direction": "below", "ruleId": "cm.locked_volume_mtd.low_volume"}, "status": "ok", "grain": "mtd", "asOfDate": "2026-07-25", "periodStart": "2026-07-01", "periodEnd": "2026-07-25", "sourceView": "Cube.CapitalMarkets", "sourceColumn": "locked_volume_mtd", "isStale": false, "asOf": "2026-07-25T14:30:00Z"}, {"id": "cm.pipeline_value", "label": "Pipeline Value", "domain": "capital_markets", "value": 612300000, "unit": "usd", "formatHint": "currencyCompact", "previousValue": 618900000, "comparisonLabel": "vs prior day", "changeAbsolute": -6600000, "changePercent": -1.07, "trend": "down", "trendIsGood": false, "threshold": null, "status": "ok", "grain": "daily", "asOfDate": "2026-07-25", "periodStart": "2026-07-25", "periodEnd": "2026-07-25", "sourceView": "Cube.CapitalMarkets", "sourceColumn": "pipeline_value", "isStale": false, "asOf": "2026-07-25T14:30:00Z"}], "callCenter": [{"id": "cc.call_volume_today", "label": "Call Volume (Today)", "domain": "call_center", "value": 1842, "unit": "count", "formatHint": "integer", "previousValue": 1705, "comparisonLabel": "vs same time yesterday", "changeAbsolute": 137, "changePercent": 8.04, "trend": "up", "trendIsGood": true, "threshold": null, "status": "ok", "grain": "intraday", "asOfDate": "2026-07-25", "periodStart": "2026-07-25", "periodEnd": "2026-07-25", "sourceView": "dbo.CallVolume", "sourceColumn": "call_count", "isStale": false, "asOf": "2026-07-25T14:30:00Z"}, {"id": "cc.avg_handle_time", "label": "Avg Handle Time", "domain": "call_center", "value": 428, "unit": "seconds", "formatHint": "duration", "previousValue": 361, "comparisonLabel": "vs 7-day avg", "changeAbsolute": 67, "changePercent": 18.56, "trend": "up", "trendIsGood": false, "threshold": {"warning": 400, "critical": 480, "direction": "above", "ruleId": "cc.avg_handle_time.slow"}, "status": "warning", "grain": "intraday", "asOfDate": "2026-07-25", "periodStart": "2026-07-25", "periodEnd": "2026-07-25", "sourceView": "dbo.CallVolume", "sourceColumn": "avg_handle_time_sec", "isStale": false, "asOf": "2026-07-25T14:30:00Z"}], "alerts": [{"id": "pipelines:skyvern:job_RateSheet_Scrape:status_failed", "severity": "critical", "severityRank": 0, "title": "Skyvern job failed", "message": "Rate Sheet Scrape failed at 11:58 UTC \u2014 Target page layout changed \u2014 selector 'div.rate-table' not found after 3 retries. (2 consecutive failures)", "source": "pipelines", "entityId": "skyvern:job_RateSheet_Scrape", "entityName": "Rate Sheet Scrape", "entityType": "job", "ruleId": null, "ruleType": "status_failed", "observedValue": "failed", "thresholdValue": null, "raisedAt": "2026-07-25T11:59:13.000Z", "lastSeenAt": "2026-07-25T14:31:55.000Z", "isAcknowledged": false, "acknowledgedBy": null, "acknowledgedAt": null, "deepLink": "https://app.skyvern.com/runs/run-9"}, {"id": "pipelines:aztbl:ComplianceFlags:status_failed", "severity": "critical", "severityRank": 0, "title": "Table refresh failed", "message": "AzTbl.ComplianceFlags failed at 12:25 UTC \u2014 Query timeout \u2014 source table locked by a concurrent write for >30s.", "source": "datasets", "entityId": "aztbl:ComplianceFlags", "entityName": "AzTbl.ComplianceFlags", "entityType": "table", "ruleId": null, "ruleType": "status_failed", "observedValue": "failed", "thresholdValue": null, "raisedAt": "2026-07-25T12:25:20.500Z", "lastSeenAt": "2026-07-25T14:31:55.000Z", "isAcknowledged": false, "acknowledgedBy": null, "acknowledgedAt": null, "deepLink": null}, {"id": "pipelines:fabtbl:fact_DelinquencyScore:status_failed", "severity": "critical", "severityRank": 0, "title": "Table refresh failed", "message": "FabTbl.fact_DelinquencyScore failed at 13:29 UTC \u2014 Query timeout \u2014 source table locked by a concurrent write for >30s.", "source": "datasets", "entityId": "fabtbl:fact_DelinquencyScore", "entityName": "FabTbl.fact_DelinquencyScore", "entityType": "table", "ruleId": null, "ruleType": "status_failed", "observedValue": "failed", "thresholdValue": null, "raisedAt": "2026-07-25T13:29:52.000Z", "lastSeenAt": "2026-07-25T14:31:55.000Z", "isAcknowledged": false, "acknowledgedBy": null, "acknowledgedAt": null, "deepLink": null}, {"id": "callCenter:cc.avg_handle_time:threshold_breach", "severity": "warning", "severityRank": 1, "title": "Avg Handle Time above warning threshold", "message": "Avg Handle Time is 428s, above the 400s warning threshold (7-day avg: 361s).", "source": "callCenter", "entityId": "cc.avg_handle_time", "entityName": "Avg Handle Time", "entityType": "kpi", "ruleId": "cc.avg_handle_time.slow", "ruleType": "threshold_breach", "observedValue": 428, "thresholdValue": 400, "raisedAt": "2026-07-25T14:30:00Z", "lastSeenAt": "2026-07-25T14:30:00Z", "isAcknowledged": false, "acknowledgedBy": null, "acknowledgedAt": null, "deepLink": null}, {"id": "datasets:cube:DataPlatformOps:empty_dataset", "severity": "critical", "severityRank": 0, "title": "Dataset returned zero records", "message": "Cube.DataPlatformOps refreshed successfully but contains 0 records (was 128,442 as of the prior refresh).", "source": "datasets", "entityId": "cube:DataPlatformOps", "entityName": "Cube.DataPlatformOps", "entityType": "cube", "ruleId": null, "ruleType": "empty_dataset", "observedValue": 0, "thresholdValue": null, "raisedAt": "2026-07-25T14:12:10.000Z", "lastSeenAt": "2026-07-25T14:32:10Z", "isAcknowledged": false, "acknowledgedBy": null, "acknowledgedAt": null, "deepLink": null}], "datasets": [{"id": "aztbl:LoanLockEvents", "name": "AzTbl.LoanLockEvents", "system": "azure_table", "assetType": "table", "domain": "capital_markets", "group": "Azure Tables", "tags": ["env:prod", "critical-path"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T13:07:10.000Z", "lastRunEndedAt": "2026-07-25T13:08:07.000Z", "lastSuccessAt": "2026-07-25T13:08:07.000Z", "durationMs": 57000, "avgDurationMs": 54000, "expectedDurationMs": 60000, "nextRunAt": "2026-07-25T15:01:10.000Z", "nextRunSource": "trigger", "scheduleCron": "*/15 * * * *", "timezone": "America/New_York", "runId": "azure_table-run-1885c", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 842113, "recordCountPrevious": 840909, "recordCountDelta": 1204}, {"id": "aztbl:RateSheetHistory", "name": "AzTbl.RateSheetHistory", "system": "azure_table", "assetType": "table", "domain": "capital_markets", "group": "Azure Tables", "tags": ["env:prod"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T12:30:10.000Z", "lastRunEndedAt": "2026-07-25T12:30:55.000Z", "lastSuccessAt": "2026-07-25T12:30:55.000Z", "durationMs": 45000, "avgDurationMs": 40500, "expectedDurationMs": 45000, "nextRunAt": "2026-07-25T15:18:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 * * * *", "timezone": "America/New_York", "runId": "azure_table-run-18881", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 3204552, "recordCountPrevious": 3203988, "recordCountDelta": 564}, {"id": "aztbl:InvestorDeliveryLog", "name": "AzTbl.InvestorDeliveryLog", "system": "azure_table", "assetType": "table", "domain": "capital_markets", "group": "Azure Tables", "tags": ["env:prod"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T11:53:10.000Z", "lastRunEndedAt": "2026-07-25T11:53:57.250Z", "lastSuccessAt": "2026-07-25T11:53:57.250Z", "durationMs": 47250, "avgDurationMs": 40500, "expectedDurationMs": 45000, "nextRunAt": "2026-07-25T15:35:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 6 * * *", "timezone": "America/New_York", "runId": "azure_table-run-188a6", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 128004, "recordCountPrevious": 127940, "recordCountDelta": 64}, {"id": "aztbl:EscrowTransactions", "name": "AzTbl.EscrowTransactions", "system": "azure_table", "assetType": "table", "domain": "servicing", "group": "Azure Tables", "tags": ["env:prod", "pii"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T14:16:10.000Z", "lastRunEndedAt": "2026-07-25T14:17:01.000Z", "lastSuccessAt": "2026-07-25T14:17:01.000Z", "durationMs": 51000, "avgDurationMs": 54000, "expectedDurationMs": 60000, "nextRunAt": "2026-07-25T15:52:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 5 * * *", "timezone": "America/New_York", "runId": "azure_table-run-188cb", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 61882, "recordCountPrevious": 61850, "recordCountDelta": 32}, {"id": "aztbl:CallEvents", "name": "AzTbl.CallEvents", "system": "azure_table", "assetType": "table", "domain": "call_center", "group": "Azure Tables", "tags": ["env:prod"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T13:39:10.000Z", "lastRunEndedAt": "2026-07-25T13:39:37.000Z", "lastSuccessAt": "2026-07-25T13:39:37.000Z", "durationMs": 27000, "avgDurationMs": 27000, "expectedDurationMs": 30000, "nextRunAt": "2026-07-25T14:39:10.000Z", "nextRunSource": "trigger", "scheduleCron": "*/10 * * * *", "timezone": "America/New_York", "runId": "azure_table-run-188f0", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 5983221, "recordCountPrevious": 5981004, "recordCountDelta": 2217}, {"id": "aztbl:AgentRoster", "name": "AzTbl.AgentRoster", "system": "azure_table", "assetType": "table", "domain": "call_center", "group": "Azure Tables", "tags": ["env:prod", "pii"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T13:02:10.000Z", "lastRunEndedAt": "2026-07-25T13:02:38.500Z", "lastSuccessAt": "2026-07-25T13:02:38.500Z", "durationMs": 28500, "avgDurationMs": 27000, "expectedDurationMs": 30000, "nextRunAt": "2026-07-25T14:56:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 * * * *", "timezone": "America/New_York", "runId": "azure_table-run-18915", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 342, "recordCountPrevious": 342, "recordCountDelta": 0}, {"id": "aztbl:ComplianceFlags", "name": "AzTbl.ComplianceFlags", "system": "azure_table", "assetType": "table", "domain": "servicing", "group": "Azure Tables", "tags": ["env:prod", "pii"], "status": "failed", "sourceStatus": "Failed", "statusReason": "Query timeout \u2014 source table locked by a concurrent write for >30s.", "lastRunAt": "2026-07-25T12:25:10.000Z", "lastRunEndedAt": "2026-07-25T12:25:20.500Z", "lastSuccessAt": "2026-07-25T11:25:10.000Z", "durationMs": 10500, "avgDurationMs": 27000, "expectedDurationMs": 30000, "nextRunAt": "2026-07-25T15:13:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 4 * * *", "timezone": "America/New_York", "runId": "azure_table-run-1893a", "runUrl": null, "consecutiveFailures": 1, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 18204, "recordCountPrevious": 18204, "recordCountDelta": 0}, {"id": "aztbl:SkyvernRunLog", "name": "AzTbl.SkyvernRunLog", "system": "azure_table", "assetType": "table", "domain": "data_platform", "group": "Azure Tables", "tags": ["env:prod"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T11:48:10.000Z", "lastRunEndedAt": "2026-07-25T11:48:31.000Z", "lastSuccessAt": "2026-07-25T11:48:31.000Z", "durationMs": 21000, "avgDurationMs": 18000, "expectedDurationMs": 20000, "nextRunAt": "2026-07-25T15:30:10.000Z", "nextRunSource": "trigger", "scheduleCron": "*/30 * * * *", "timezone": "America/New_York", "runId": "azure_table-run-1895f", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 91004, "recordCountPrevious": 90771, "recordCountDelta": 233}, {"id": "aztbl:PipelineAuditTrail", "name": "AzTbl.PipelineAuditTrail", "system": "azure_table", "assetType": "table", "domain": "data_platform", "group": "Azure Tables", "tags": ["env:prod"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T14:11:10.000Z", "lastRunEndedAt": "2026-07-25T14:11:27.000Z", "lastSuccessAt": "2026-07-25T14:11:27.000Z", "durationMs": 17000, "avgDurationMs": 18000, "expectedDurationMs": 20000, "nextRunAt": "2026-07-25T15:47:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 * * * *", "timezone": "America/New_York", "runId": "azure_table-run-18984", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 204552, "recordCountPrevious": 204301, "recordCountDelta": 251}, {"id": "aztbl:CustomerContactHistory", "name": "AzTbl.CustomerContactHistory", "system": "azure_table", "assetType": "table", "domain": "call_center", "group": "Azure Tables", "tags": ["env:prod", "pii"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T13:34:10.000Z", "lastRunEndedAt": "2026-07-25T13:35:04.000Z", "lastSuccessAt": "2026-07-25T13:35:04.000Z", "durationMs": 54000, "avgDurationMs": 54000, "expectedDurationMs": 60000, "nextRunAt": "2026-07-25T16:04:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 1 * * *", "timezone": "America/New_York", "runId": "azure_table-run-189a9", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 1204882, "recordCountPrevious": 1204650, "recordCountDelta": 232}, {"id": "fabtbl:dim_LoanOfficer", "name": "FabTbl.dim_LoanOfficer", "system": "fabric", "assetType": "table", "domain": "capital_markets", "group": "Fabric Tables", "tags": ["env:prod"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T12:57:10.000Z", "lastRunEndedAt": "2026-07-25T12:58:07.000Z", "lastSuccessAt": "2026-07-25T12:58:07.000Z", "durationMs": 57000, "avgDurationMs": 54000, "expectedDurationMs": 60000, "nextRunAt": "2026-07-25T14:51:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 2 * * *", "timezone": "America/New_York", "runId": "fabric-run-189ce", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 412, "recordCountPrevious": 412, "recordCountDelta": 0}, {"id": "fabtbl:fact_LockVolume", "name": "FabTbl.fact_LockVolume", "system": "fabric", "assetType": "table", "domain": "capital_markets", "group": "Fabric Tables", "tags": ["env:prod", "critical-path"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T12:20:10.000Z", "lastRunEndedAt": "2026-07-25T12:22:10.000Z", "lastSuccessAt": "2026-07-25T12:22:10.000Z", "durationMs": 120000, "avgDurationMs": 108000, "expectedDurationMs": 120000, "nextRunAt": "2026-07-25T15:08:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 2 * * *", "timezone": "America/New_York", "runId": "fabric-run-189f3", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 2204881, "recordCountPrevious": 2198004, "recordCountDelta": 6877}, {"id": "fabtbl:fact_CallVolume", "name": "FabTbl.fact_CallVolume", "system": "fabric", "assetType": "table", "domain": "call_center", "group": "Fabric Tables", "tags": ["env:prod", "critical-path"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T11:43:10.000Z", "lastRunEndedAt": "2026-07-25T11:44:44.500Z", "lastSuccessAt": "2026-07-25T11:44:44.500Z", "durationMs": 94500, "avgDurationMs": 81000, "expectedDurationMs": 90000, "nextRunAt": "2026-07-25T15:25:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 2 * * *", "timezone": "America/New_York", "runId": "fabric-run-18a18", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 5982004, "recordCountPrevious": 5978552, "recordCountDelta": 3452}, {"id": "fabtbl:dim_CallCenterAgent", "name": "FabTbl.dim_CallCenterAgent", "system": "fabric", "assetType": "table", "domain": "call_center", "group": "Fabric Tables", "tags": ["env:prod"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T14:06:10.000Z", "lastRunEndedAt": "2026-07-25T14:06:48.250Z", "lastSuccessAt": "2026-07-25T14:06:48.250Z", "durationMs": 38250, "avgDurationMs": 40500, "expectedDurationMs": 45000, "nextRunAt": "2026-07-25T15:42:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 2 * * *", "timezone": "America/New_York", "runId": "fabric-run-18a3d", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 340, "recordCountPrevious": 338, "recordCountDelta": 2}, {"id": "fabtbl:fact_DelinquencyScore", "name": "FabTbl.fact_DelinquencyScore", "system": "fabric", "assetType": "table", "domain": "servicing", "group": "Fabric Tables", "tags": ["env:prod"], "status": "failed", "sourceStatus": "Failed", "statusReason": "Query timeout \u2014 source table locked by a concurrent write for >30s.", "lastRunAt": "2026-07-25T13:29:10.000Z", "lastRunEndedAt": "2026-07-25T13:29:52.000Z", "lastSuccessAt": "2026-07-25T12:29:10.000Z", "durationMs": 42000, "avgDurationMs": 108000, "expectedDurationMs": 120000, "nextRunAt": "2026-07-25T15:59:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 3 * * *", "timezone": "America/New_York", "runId": "fabric-run-18a62", "runUrl": null, "consecutiveFailures": 1, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 84552, "recordCountPrevious": 84552, "recordCountDelta": 0}, {"id": "fabtbl:dim_ServicingAccount", "name": "FabTbl.dim_ServicingAccount", "system": "fabric", "assetType": "table", "domain": "servicing", "group": "Fabric Tables", "tags": ["env:prod"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T12:52:10.000Z", "lastRunEndedAt": "2026-07-25T12:53:07.000Z", "lastSuccessAt": "2026-07-25T12:53:07.000Z", "durationMs": 57000, "avgDurationMs": 54000, "expectedDurationMs": 60000, "nextRunAt": "2026-07-25T14:46:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 3 * * *", "timezone": "America/New_York", "runId": "fabric-run-18a87", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 61882, "recordCountPrevious": 61850, "recordCountDelta": 32}, {"id": "fabtbl:fact_PipelineRunHistory", "name": "FabTbl.fact_PipelineRunHistory", "system": "fabric", "assetType": "table", "domain": "data_platform", "group": "Fabric Tables", "tags": ["env:prod"], "status": "running", "sourceStatus": "InProgress", "statusReason": null, "lastRunAt": "2026-07-25T12:15:10.000Z", "lastRunEndedAt": null, "lastSuccessAt": null, "durationMs": null, "avgDurationMs": 40500, "expectedDurationMs": 45000, "nextRunAt": "2026-07-25T15:03:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 * * * *", "timezone": "America/New_York", "runId": "fabric-run-18aac", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 204991, "recordCountPrevious": 204552, "recordCountDelta": 439}, {"id": "fabtbl:dim_Date", "name": "FabTbl.dim_Date", "system": "fabric", "assetType": "table", "domain": "data_platform", "group": "Fabric Tables", "tags": ["env:prod"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T11:38:10.000Z", "lastRunEndedAt": "2026-07-25T11:38:25.750Z", "lastSuccessAt": "2026-07-25T11:38:25.750Z", "durationMs": 15750, "avgDurationMs": 13500, "expectedDurationMs": 15000, "nextRunAt": "2026-07-25T15:20:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 1 * * *", "timezone": "America/New_York", "runId": "fabric-run-18ad1", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:31:55.000Z", "recordCount": 3653, "recordCountPrevious": 3652, "recordCountDelta": 1}, {"id": "cube:CapitalMarkets", "name": "Cube.CapitalMarkets", "system": "azure_cube", "assetType": "cube", "domain": "capital_markets", "group": "Cubes", "tags": ["env:prod", "cube:azure", "critical-path"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T13:57:10.000Z", "lastRunEndedAt": "2026-07-25T14:12:10.000Z", "lastSuccessAt": "2026-07-25T14:12:10.000Z", "durationMs": 900000, "avgDurationMs": 870000, "expectedDurationMs": 900000, "nextRunAt": "2026-07-25T14:57:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 */1 * * *", "timezone": "America/New_York", "runId": "azure_cube-run-cubeCapitalMarkets", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:32:10Z", "recordCount": 1842004, "recordCountPrevious": 1839552, "recordCountDelta": 2452}, {"id": "cube:Servicing", "name": "Cube.Servicing", "system": "azure_cube", "assetType": "cube", "domain": "servicing", "group": "Cubes", "tags": ["env:prod", "cube:azure"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T13:57:10.000Z", "lastRunEndedAt": "2026-07-25T14:12:10.000Z", "lastSuccessAt": "2026-07-25T14:12:10.000Z", "durationMs": 900000, "avgDurationMs": 870000, "expectedDurationMs": 900000, "nextRunAt": "2026-07-25T14:57:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 */1 * * *", "timezone": "America/New_York", "runId": "azure_cube-run-cubeServicing", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:32:10Z", "recordCount": 412884, "recordCountPrevious": 412801, "recordCountDelta": 83}, {"id": "cube:CallCenterOps", "name": "Cube.CallCenterOps", "system": "fabric", "assetType": "cube", "domain": "call_center", "group": "Cubes", "tags": ["env:prod", "cube:fabric"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T13:57:10.000Z", "lastRunEndedAt": "2026-07-25T14:12:10.000Z", "lastSuccessAt": "2026-07-25T14:12:10.000Z", "durationMs": 900000, "avgDurationMs": 870000, "expectedDurationMs": 900000, "nextRunAt": "2026-07-25T14:57:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 */1 * * *", "timezone": "America/New_York", "runId": "fabric-run-cubeCallCenterOps", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:32:10Z", "recordCount": 5982441, "recordCountPrevious": 5978004, "recordCountDelta": 4437}, {"id": "cube:DataPlatformOps", "name": "Cube.DataPlatformOps", "system": "fabric", "assetType": "cube", "domain": "data_platform", "group": "Cubes", "tags": ["env:prod", "cube:fabric"], "status": "succeeded", "sourceStatus": "Succeeded", "statusReason": null, "lastRunAt": "2026-07-25T13:57:10.000Z", "lastRunEndedAt": "2026-07-25T14:12:10.000Z", "lastSuccessAt": "2026-07-25T14:12:10.000Z", "durationMs": 900000, "avgDurationMs": 870000, "expectedDurationMs": 900000, "nextRunAt": "2026-07-25T14:57:10.000Z", "nextRunSource": "trigger", "scheduleCron": "0 */1 * * *", "timezone": "America/New_York", "runId": "fabric-run-cubeDataPlatformOps", "runUrl": null, "consecutiveFailures": 0, "isEnabled": true, "isStale": false, "asOf": "2026-07-25T14:32:10Z", "recordCount": 0, "recordCountPrevious": 128442, "recordCountDelta": -128442}]};
+
+// Mutable working copy — the Add/Edit UI writes here, never to SNAPSHOT.
+// In the real system this whole object is replaced by GET /snapshot; Add/Edit
+// call the Admin API instead of mutating local state. See docs/data-architecture.md.
+const liveData = JSON.parse(JSON.stringify(SNAPSHOT));
+
+const DOMAIN_LABEL = {
+  capital_markets: "Capital Markets", call_center: "Call Center",
+  servicing: "Servicing", data_platform: "Data Platform", other: "Other"
+};
+const SYSTEM_ABBR = { adf: "ADF", fabric: "FAB", skyvern: "SKY", azure_table: "AZT" };
+
+let activeTab = "overview";
+let pipelineFilters = { search: "", tags: new Set() };
+let datasetFilters = { search: "", tags: new Set() };
+let groupCollapse = {}; // groupName -> collapsed?, defaulted lazily per group on first render (group names are unique across pipelines/datasets)
+
+// All "relative" labels are anchored to the snapshot's own generatedAt, not the
+// viewer's wall clock — this is a fixed sample moment, not a live feed, so
+// re-opening the page next week shouldn't make every timestamp read "3d ago".
+function snapNow() { return new Date(liveData.generatedAt).getTime(); }
+function fmtSpan(s) {
+  if (s < 5) return "just now";
+  if (s < 60) return s + "s";
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + "m";
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + "h " + (m % 60) + "m";
+  return Math.floor(h / 24) + "d";
+}
+function fmtAgo(iso) {
+  if (!iso) return "—";
+  const diff = snapNow() - new Date(iso).getTime();
+  const span = fmtSpan(Math.floor(Math.abs(diff) / 1000));
+  if (span === "just now") return span;
+  return diff >= 0 ? span + " ago" : "in " + span;
+}
+function fmtUntil(iso) {
+  if (!iso) return "—";
+  const diff = new Date(iso).getTime() - snapNow();
+  const span = fmtSpan(Math.floor(Math.abs(diff) / 1000));
+  if (span === "just now") return span;
+  return diff >= 0 ? "in " + span : span + " overdue";
+}
+function fmtDur(ms) {
+  if (ms === null || ms === undefined) return "—";
+  const s = Math.round(ms / 1000);
+  if (s < 60) return s + "s";
+  const m = Math.floor(s / 60);
+  return m + "m " + (s % 60) + "s";
+}
+function fmtClock(iso) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false }) + " ET*";
+}
+function fmtCountCompact(n) {
+  if (n === null || n === undefined) return "—";
+  const abs = Math.abs(n);
+  if (abs >= 1e6) return (n / 1e6).toFixed(1) + "M";
+  if (abs >= 1e3) return (n / 1e3).toFixed(1) + "K";
+  return n.toLocaleString();
+}
+function fmtDelta(n) {
+  if (n === null || n === undefined) return "";
+  if (n === 0) return " (±0)";
+  return " (" + (n > 0 ? "+" : "") + fmtCountCompact(n) + ")";
+}
+// A dataset that "succeeded" but returned 0 records is a real failure — status alone
+// misses it, so every status-color decision (pulse dots, pills) routes through here.
+function statusColor(item) {
+  const isEmpty = item.recordCount === 0 && item.status !== "failed";
+  if (isEmpty) return "critical";
+  if (item.status === "succeeded") return "good";
+  if (item.status === "failed") return "critical";
+  if (item.status === "unknown") return "unknown";
+  return "warning";
+}
+function fmtCurrencyCompact(v) {
+  if (v === null || v === undefined) return "—";
+  const abs = Math.abs(v);
+  if (abs >= 1e9) return "$" + (v / 1e9).toFixed(2) + "B";
+  if (abs >= 1e6) return "$" + (v / 1e6).toFixed(1) + "M";
+  if (abs >= 1e3) return "$" + (v / 1e3).toFixed(0) + "K";
+  return "$" + v.toFixed(0);
+}
+function fmtInt(v) { return v === null || v === undefined ? "—" : v.toLocaleString(); }
+function fmtVal(kpi) {
+  if (kpi.value === null || kpi.value === undefined) return "—";
+  if (kpi.formatHint === "currencyCompact") return fmtCurrencyCompact(kpi.value);
+  if (kpi.formatHint === "integer") return fmtInt(kpi.value);
+  if (kpi.formatHint === "duration") return fmtDur(kpi.value * 1000);
+  if (kpi.formatHint === "percent1") return kpi.value.toFixed(1) + "%";
+  return String(kpi.value);
+}
+function statusFromKpi(kpi) { return kpi.status || "unknown"; }
+function sevRank(sev) { return sev === "critical" ? 0 : sev === "warning" ? 1 : 2; }
+function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html !== undefined) e.innerHTML = html; return e; }
+
+function render() {
+  const snap = liveData;
+  document.getElementById("connDot").className = "status-dot " + (snap.connection.state === "connected" ? "on" : "off");
+  document.getElementById("connLabel").textContent = snap.connection.state === "connected"
+    ? "All collectors reporting" : (snap.connection.message || "No upstream systems reachable");
+  document.getElementById("footSchema").textContent = snap.schemaVersion;
+  document.getElementById("footEnv").textContent = snap.environment;
+  document.getElementById("footGenAt").textContent = "generated " + fmtClock(snap.generatedAt);
+
+  renderAlertBanner(snap);
+  renderOverview(snap);
+  renderDatasets(snap);
+  renderPipelines(snap);
+  renderPbi(snap);
+  renderKpiGrid(snap.capitalMarkets, "cmGrid");
+  renderKpiGrid(snap.callCenter, "ccGrid");
+
+  document.getElementById("tabNDatasets").textContent = activeAssets(snap, "datasets").length;
+  document.getElementById("tabNPipelines").textContent = activeAssets(snap, "pipelines").length;
+  document.getElementById("tabNPbi").textContent = snap.pbiDatasets.length;
+  tickClock();
+}
+
+function renderAlertBanner(snap) {
+  const alerts = [...snap.alerts].sort((a, b) => sevRank(a.severity) - sevRank(b.severity));
+  const lead = alerts[0];
+  const stripe = document.getElementById("alertStripe");
+  const title = document.getElementById("alertLeadTitle");
+  const msg = document.getElementById("alertLeadMsg");
+  const pill = document.getElementById("alertCountPill");
+  const list = document.getElementById("alertList");
+  pill.textContent = alerts.length;
+  list.innerHTML = "";
+  if (!lead) {
+    stripe.className = "sev-stripe info";
+    title.textContent = "All clear";
+    msg.textContent = "No active alerts";
+    list.appendChild(el("div", "alert-empty", "Nothing to report."));
+  } else {
+    stripe.className = "sev-stripe " + lead.severity;
+    title.textContent = lead.title;
+    msg.textContent = lead.message;
+    alerts.forEach(a => {
+      const row = el("div", "alert-row");
+      row.appendChild(el("div", "sev-stripe " + a.severity));
+      const txt = el("div", "alert-lead-text");
+      txt.appendChild(el("div", "alert-lead-title", a.title));
+      txt.appendChild(el("div", "alert-lead-msg", a.message));
+      row.appendChild(txt);
+      list.appendChild(row);
+    });
+  }
+}
+
+function activeAssets(snap, key) { return snap[key].filter(p => p.isEnabled !== false); }
+
+function renderOverview(snap) {
+  const pipelines = activeAssets(snap, "pipelines");
+  const datasets = activeAssets(snap, "datasets");
+  const total = pipelines.length + datasets.length + snap.pbiDatasets.length;
+  const failing = pipelines.filter(p => statusColor(p) === "critical").length
+    + datasets.filter(p => statusColor(p) === "critical").length
+    + snap.pbiDatasets.filter(d => d.status === "failed").length;
+  const stale = [snap.sections.pipelines, snap.sections.datasets, snap.sections.pbiDatasets, snap.sections.capitalMarkets, snap.sections.callCenter]
+    .filter(s => s.isStale).length;
+
+  const grid = document.getElementById("statGrid");
+  grid.innerHTML = "";
+  const stats = [
+    { label: "Monitored assets", value: total, cls: "" },
+    { label: "Failing now", value: failing, cls: failing > 0 ? "critical" : "good" },
+    { label: "Active alerts", value: snap.alerts.length, cls: snap.alerts.length > 0 ? "warning" : "good" }
+  ];
+  stats.forEach(s => {
+    const c = el("div", "stat-card");
+    c.appendChild(el("div", "stat-value " + s.cls, s.value));
+    c.appendChild(el("div", "stat-label", s.label));
+    grid.appendChild(c);
+  });
+
+  // Grouped by the structural "group" field (Azure Tables, Fabric Tables, ADF Pipelines, ...),
+  // not domain — this is the technical-source bucket the console now filters/organizes by.
+  const groups = {};
+  const groupOrderSeen = [];
+  [...pipelines, ...datasets, ...snap.pbiDatasets.map(d => ({ ...d, group: "Power BI", status: d.status }))].forEach(item => {
+    const g = item.group || "Other";
+    if (!groups[g]) { groups[g] = []; groupOrderSeen.push(g); }
+    groups[g].push(item);
+  });
+  const pg = document.getElementById("pulseGroups");
+  pg.innerHTML = "";
+  groupOrderSeen.forEach(g => {
+    const wrap = el("div", "pulse-group");
+    const head = el("div", "pulse-group-head");
+    head.appendChild(el("span", "", g));
+    head.appendChild(el("span", "", '<span style="color:var(--ink-faint);font-weight:600;font-size:10.5px;">' + groups[g].length + ' assets</span>'));
+    wrap.appendChild(head);
+    const dots = el("div", "pulse-dots");
+    groups[g].forEach(item => {
+      const dot = el("div", "pulse-dot " + statusColor(item));
+      dot.title = (item.name) + " — " + item.status + (item.recordCount === 0 ? " — 0 records" : "");
+      dots.appendChild(dot);
+    });
+    wrap.appendChild(dots);
+    pg.appendChild(wrap);
+  });
+
+  const mini = document.getElementById("miniAlertList");
+  mini.innerHTML = "";
+  if (snap.alerts.length === 0) {
+    mini.appendChild(el("div", "empty-note", "No alerts in this snapshot."));
+  } else {
+    [...snap.alerts].sort((a, b) => sevRank(a.severity) - sevRank(b.severity)).forEach(a => {
+      const row = el("div", "alert-row");
+      row.appendChild(el("div", "sev-stripe " + a.severity));
+      const txt = el("div", "alert-lead-text");
+      txt.appendChild(el("div", "alert-lead-title", a.title));
+      txt.appendChild(el("div", "alert-lead-msg", a.message));
+      row.appendChild(txt);
+      mini.appendChild(row);
+    });
+  }
+
+  renderKpiGrid([...snap.capitalMarkets.slice(0, 1), ...snap.callCenter.slice(0, 1)], "kpiSnapshotGrid");
+}
+
+function allTags(snap, key) {
+  const counts = {};
+  activeAssets(snap, key).forEach(p => (p.tags || []).forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+  return Object.entries(counts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
+function matchesFilters(p, filters) {
+  if (p.isEnabled === false) return false;
+  if (filters.search) {
+    const q = filters.search.toLowerCase();
+    if (!p.name.toLowerCase().includes(q) && !p.id.toLowerCase().includes(q) && !p.group.toLowerCase().includes(q)) return false;
+  }
+  if (filters.tags.size > 0) {
+    const tagSet = new Set(p.tags || []);
+    for (const t of filters.tags) if (!tagSet.has(t)) return false;
+  }
+  return true;
+}
+function renderTagChips(snap, key, filters, rowId, rerender) {
+  const row = document.getElementById(rowId);
+  row.innerHTML = "";
+  allTags(snap, key).forEach(([tag, count]) => {
+    const chip = el("button", "tag-chip" + (filters.tags.has(tag) ? " active" : ""));
+    chip.type = "button";
+    chip.innerHTML = tag + '<span class="n">' + count + "</span>";
+    chip.addEventListener("click", () => {
+      filters.tags.has(tag) ? filters.tags.delete(tag) : filters.tags.add(tag);
+      rerender();
+    });
+    row.appendChild(chip);
+  });
+  if (filters.tags.size > 0) {
+    const clear = el("button", "tag-chip tag-chip-clear", "Clear tags ✕");
+    clear.type = "button";
+    clear.addEventListener("click", () => { filters.tags.clear(); rerender(); });
+    row.appendChild(clear);
+  }
+}
+
+// Shared by the Pipelines and Datasets tabs: grouping, search, tag-chip filtering, and
+// collapse state all work identically over either collection — only the per-card fields differ,
+// which buildCardConfig(item, rerender) supplies.
+function renderAssetSection(snap, key, filters, ids, buildCardConfig) {
+  const rerender = () => renderAssetSection(snap, key, filters, ids, buildCardConfig);
+  renderTagChips(snap, key, filters, ids.tagRow, rerender);
+  const wrap = document.getElementById(ids.groups);
+  wrap.innerHTML = "";
+
+  const totalByGroup = {};
+  const groupOrder = [];
+  activeAssets(snap, key).forEach(p => {
+    if (!(p.group in totalByGroup)) groupOrder.push(p.group);
+    totalByGroup[p.group] = (totalByGroup[p.group] || 0) + 1;
+  });
+
+  const filtered = snap[key].filter(p => matchesFilters(p, filters));
+  const filteredByGroup = {};
+  filtered.forEach(p => { (filteredByGroup[p.group] = filteredByGroup[p.group] || []).push(p); });
+
+  const filtersActive = !!filters.search || filters.tags.size > 0;
+  document.getElementById(ids.emptyNote).style.display = filtered.length === 0 ? "flex" : "none";
+
+  groupOrder.forEach(gName => {
+    const items = filteredByGroup[gName];
+    if (!items || items.length === 0) return;
+    if (!(gName in groupCollapse)) groupCollapse[gName] = !items.some(p => statusColor(p) === "critical");
+    const collapsed = filtersActive ? false : groupCollapse[gName];
+
+    const section = el("div", "group-section" + (collapsed ? " collapsed" : ""));
+    const header = el("div", "group-header");
+    header.appendChild(el("span", "group-title", gName));
+    header.appendChild(el("span", "group-count", items.length + " / " + totalByGroup[gName]));
+    const dots = el("div", "group-mini-dots");
+    items.slice(0, 14).forEach(p => dots.appendChild(el("div", "group-mini-dot " + statusColor(p))));
+    header.appendChild(dots);
+    const chevWrap = el("span", "", "");
+    chevWrap.innerHTML = '<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>';
+    header.appendChild(chevWrap);
+    header.addEventListener("click", () => {
+      if (filtersActive) return;
+      groupCollapse[gName] = !groupCollapse[gName];
+      rerender();
+    });
+    section.appendChild(header);
+
+    const list = el("div", "card-list");
+    items.forEach(p => list.appendChild(assetCard(buildCardConfig(p, rerender))));
+    section.appendChild(list);
+    wrap.appendChild(section);
+  });
+}
+
+function renderPipelines(snap) {
+  renderAssetSection(snap, "pipelines", pipelineFilters,
+    { tagRow: "tagChipRow", groups: "pipelineGroups", emptyNote: "pipelineEmptyNote" },
+    (p, rerender) => ({
+      icon: SYSTEM_ABBR[p.system] || p.system.slice(0, 3).toUpperCase(),
+      name: p.name,
+      status: p.status,
+      tags: p.tags,
+      sub: [fmtAgo(p.lastRunAt), "dur " + fmtDur(p.durationMs), "next " + fmtUntil(p.nextRunAt)],
+      detail: [
+        ["Domain", DOMAIN_LABEL[p.domain] || p.domain],
+        ["Group", p.group],
+        ["System", p.system.toUpperCase()],
+        ["Last run", fmtClock(p.lastRunAt)],
+        ["Duration", fmtDur(p.durationMs)],
+        ["Next run", fmtClock(p.nextRunAt) + (p.nextRunSource ? " (" + p.nextRunSource + ")" : "")],
+        ["Consecutive fails", p.consecutiveFailures]
+      ],
+      reason: p.statusReason,
+      onEdit: () => openAssetModal("edit", p),
+      onRemoveTag: (tag) => { p.tags = (p.tags || []).filter(t => t !== tag); rerender(); }
+    })
+  );
+}
+
+function renderDatasets(snap) {
+  renderAssetSection(snap, "datasets", datasetFilters,
+    { tagRow: "datasetTagChipRow", groups: "datasetGroups", emptyNote: "datasetEmptyNote" },
+    (p, rerender) => {
+      const isEmpty = p.recordCount === 0 && p.status !== "failed";
+      return {
+        icon: SYSTEM_ABBR[p.system] || p.system.slice(0, 3).toUpperCase(),
+        name: p.name,
+        status: isEmpty ? "empty" : p.status,
+        tags: p.tags,
+        sub: [fmtAgo(p.lastRunAt), fmtCountCompact(p.recordCount) + " rows" + fmtDelta(p.recordCountDelta), "next " + fmtUntil(p.nextRunAt)],
+        detail: [
+          ["Domain", DOMAIN_LABEL[p.domain] || p.domain],
+          ["Group", p.group],
+          ["System", p.system.toUpperCase()],
+          ["Record count", p.recordCount === null ? "—" : p.recordCount.toLocaleString()],
+          ["Since last refresh", p.recordCountDelta === null ? "—" : (p.recordCountDelta >= 0 ? "+" : "") + p.recordCountDelta.toLocaleString()],
+          ["Last run", fmtClock(p.lastRunAt)],
+          ["Duration", fmtDur(p.durationMs)],
+          ["Next run", fmtClock(p.nextRunAt) + (p.nextRunSource ? " (" + p.nextRunSource + ")" : "")]
+        ],
+        reason: isEmpty
+          ? "Refresh completed but returned 0 records — was " + (p.recordCountPrevious === null ? "unknown" : p.recordCountPrevious.toLocaleString()) + " as of the prior refresh."
+          : p.statusReason,
+        onEdit: () => openAssetModal("edit", p),
+        onRemoveTag: (tag) => { p.tags = (p.tags || []).filter(t => t !== tag); rerender(); }
+      };
+    }
+  );
+}
+
+function renderPbi(snap) {
+  const wrap = document.getElementById("pbiCards");
+  wrap.innerHTML = "";
+  snap.pbiDatasets.forEach(d => wrap.appendChild(assetCard({
+    icon: "PBI",
+    name: d.name,
+    status: d.status,
+    sub: [fmtAgo(d.startTime), "dur " + fmtDur(d.durationMs), d.refreshType],
+    detail: [
+      ["Workspace", d.workspaceName || "—"],
+      ["Refresh type", d.refreshType],
+      ["Started", fmtClock(d.startTime)],
+      ["Duration", fmtDur(d.durationMs)],
+      ["Next refresh", fmtClock(d.nextRefreshAt)],
+      ["Refreshes today", (d.refreshesUsedToday ?? "—") + " / " + (d.refreshLimitPerDay ?? "—")]
+    ],
+    reason: d.errorMessage
+  })));
+}
+
+function assetCard({ icon, name, status, sub, detail, reason, tags, onEdit, onRemoveTag }) {
+  const pillClass = status === "succeeded" ? "good" : status === "failed" ? "critical" : status === "empty" ? "critical" : status === "unknown" ? "unknown" : "warning";
+  const pillText = status === "succeeded" ? "OK" : status === "failed" ? "FAILED" : status === "empty" ? "EMPTY" : status === "unknown" ? "UNKNOWN" : status.toUpperCase();
+  const card = el("div", "asset-card");
+  const head = el("div", "asset-card-head");
+  head.appendChild(el("div", "asset-icon", icon));
+  const main = el("div", "asset-main");
+  const titleRow = el("div", "asset-title-row");
+  titleRow.appendChild(el("span", "asset-name", name));
+  main.appendChild(titleRow);
+  const subRow = el("div", "asset-sub");
+  sub.forEach(s => subRow.appendChild(el("span", "", s)));
+  main.appendChild(subRow);
+  if (tags && tags.length) {
+    const tagRow = el("div", "asset-tags");
+    tags.forEach(t => {
+      if (onRemoveTag) {
+        const chip = el("span", "asset-tag removable");
+        chip.appendChild(document.createTextNode(t));
+        const rm = el("button", "", "&times;");
+        rm.type = "button";
+        rm.setAttribute("aria-label", "Remove tag " + t);
+        rm.addEventListener("click", (e) => { e.stopPropagation(); onRemoveTag(t); });
+        chip.appendChild(rm);
+        tagRow.appendChild(chip);
+      } else {
+        tagRow.appendChild(el("span", "asset-tag", t));
+      }
+    });
+    main.appendChild(tagRow);
+  }
+  head.appendChild(main);
+  const right = el("div", "", "");
+  right.style.display = "flex"; right.style.flexDirection = "column"; right.style.alignItems = "flex-end"; right.style.gap = "6px";
+  right.appendChild(el("span", "pill " + pillClass, pillText));
+  right.appendChild(el("svg", "chev"));
+  right.querySelector("svg").outerHTML = '<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>';
+  head.appendChild(right);
+  head.addEventListener("click", () => card.classList.toggle("expanded"));
+  card.appendChild(head);
+
+  const detailBox = el("div", "asset-detail");
+  const kv = el("div", "kv-grid");
+  detail.forEach(([k, v]) => {
+    const item = el("div", "kv");
+    item.appendChild(el("div", "kv-label", k));
+    item.appendChild(el("div", "kv-value", String(v)));
+    kv.appendChild(item);
+  });
+  detailBox.appendChild(kv);
+  if (reason) detailBox.appendChild(el("div", "reason-box", reason));
+  if (onEdit) {
+    const editBtn = el("button", "edit-link", "&#9998; Edit source");
+    editBtn.type = "button";
+    editBtn.style.marginTop = "10px";
+    editBtn.addEventListener("click", (e) => { e.stopPropagation(); onEdit(); });
+    detailBox.appendChild(editBtn);
+  }
+  card.appendChild(detailBox);
+  return card;
+}
+
+function renderKpiGrid(items, targetId) {
+  const grid = document.getElementById(targetId);
+  grid.innerHTML = "";
+  items.forEach(k => {
+    const st = statusFromKpi(k);
+    const tile = el("div", "kpi-tile " + st);
+    tile.appendChild(el("div", "kpi-label", k.label));
+    tile.appendChild(el("div", "kpi-value" + (k.value === null ? " dim" : ""), fmtVal(k)));
+    let trendCls = "kpi-trend " + (k.trend || "unknown");
+    let trendGood = k.trendIsGood === true ? "good-trend" : k.trendIsGood === false ? "bad-trend" : "";
+    let arrow = k.trend === "up" ? "↑" : k.trend === "down" ? "↓" : k.trend === "flat" ? "→" : "–";
+    let pct = (k.changePercent === null || k.changePercent === undefined) ? "—" : (k.changePercent > 0 ? "+" : "") + k.changePercent.toFixed(1) + "%";
+    tile.appendChild(el("div", trendCls + " " + trendGood, arrow + " " + pct + " <span style=\"color:var(--ink-faint);margin-left:2px;\">" + (k.comparisonLabel || "") + "</span>"));
+    tile.appendChild(el("div", "kpi-source", k.sourceView + (k.isStale ? " · stale" : "")));
+    grid.appendChild(tile);
+  });
+}
+
+function tickClock() {
+  document.getElementById("tickClock").textContent = "viewer clock " + new Date().toLocaleTimeString([], { hour12: false });
+}
+setInterval(tickClock, 1000);
+
+document.getElementById("alertLead").addEventListener("click", () => {
+  document.getElementById("alertBanner").classList.toggle("expanded");
+});
+document.getElementById("pipelineSearch").addEventListener("input", (e) => {
+  pipelineFilters.search = e.target.value;
+  renderPipelines(liveData);
+});
+document.getElementById("datasetSearch").addEventListener("input", (e) => {
+  datasetFilters.search = e.target.value;
+  renderDatasets(liveData);
+});
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("panel-" + btn.dataset.tab).classList.add("active");
+    activeTab = btn.dataset.tab;
+    // The header Add-source button only makes sense on the pages that list sources.
+    document.getElementById("addAssetBtnHeader").hidden = activeTab !== "pipelines" && activeTab !== "datasets";
+  });
+});
+
+// ---------- Add / Edit source modal ----------
+// Demo-only: writes straight into liveData. In the real system this calls the
+// Admin API (POST/PATCH /assets, POST/DELETE /assets/:id/tags) instead — see
+// "Adding, editing, and tagging sources" in docs/data-architecture.md.
+let modalMode = "add";
+let modalEditingId = null;
+let modalTags = [];
+
+function slugify(s) { return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "asset"; }
+function populateDatalist(id, values) {
+  const dl = document.getElementById(id);
+  dl.innerHTML = "";
+  values.forEach(v => { const opt = document.createElement("option"); opt.value = v; dl.appendChild(opt); });
+}
+function renderModalTags() {
+  const box = document.getElementById("tagInputBox");
+  const input = document.getElementById("fTagInput");
+  box.querySelectorAll(".asset-tag").forEach(n => n.remove());
+  modalTags.forEach(t => {
+    const chip = document.createElement("span");
+    chip.className = "asset-tag removable";
+    chip.appendChild(document.createTextNode(t));
+    const rm = document.createElement("button");
+    rm.type = "button";
+    rm.innerHTML = "&times;";
+    rm.setAttribute("aria-label", "Remove tag " + t);
+    rm.addEventListener("click", () => { modalTags = modalTags.filter(x => x !== t); renderModalTags(); });
+    chip.appendChild(rm);
+    box.insertBefore(chip, input);
+  });
+}
+function openAssetModal(mode, asset) {
+  modalMode = mode;
+  modalEditingId = asset ? asset.id : null;
+  modalTags = asset ? [...(asset.tags || [])] : [];
+
+  // Adding from the Datasets tab defaults to a table, not a pipeline — matches what you're looking at.
+  const addingDataset = !asset && activeTab === "datasets";
+
+  document.getElementById("modalTitle").textContent = mode === "edit" ? "Edit source" : "Add source";
+  document.getElementById("fName").value = asset ? asset.name : "";
+  document.getElementById("fSystem").value = asset ? asset.system : (addingDataset ? "azure_table" : "adf");
+  document.getElementById("fAssetType").value = asset ? asset.assetType : (addingDataset ? "table" : "pipeline");
+  document.getElementById("fDomain").value = asset ? asset.domain : "data_platform";
+  document.getElementById("fGroup").value = asset ? asset.group : "";
+  document.getElementById("fCron").value = asset ? (asset.scheduleCron || "") : "";
+  document.getElementById("fEnabled").checked = asset ? asset.isEnabled !== false : true;
+  document.getElementById("formError").classList.remove("show");
+  document.getElementById("fTagInput").value = "";
+  renderModalTags();
+
+  const snap = liveData;
+  populateDatalist("groupOptions", [...new Set([...snap.pipelines, ...snap.datasets].map(p => p.group))]);
+  populateDatalist("tagOptions", [...new Map([...allTags(snap, "pipelines"), ...allTags(snap, "datasets")]).entries()].map(([t]) => t));
+
+  document.getElementById("assetModalBackdrop").hidden = false;
+  document.getElementById("fName").focus();
+}
+function closeAssetModal() { document.getElementById("assetModalBackdrop").hidden = true; }
+
+document.getElementById("addAssetBtnHeader").addEventListener("click", () => openAssetModal("add", null));
+document.getElementById("modalCloseBtn").addEventListener("click", closeAssetModal);
+document.getElementById("formCancelBtn").addEventListener("click", closeAssetModal);
+document.getElementById("assetModalBackdrop").addEventListener("click", (e) => {
+  if (e.target.id === "assetModalBackdrop") closeAssetModal();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !document.getElementById("assetModalBackdrop").hidden) closeAssetModal();
+});
+document.getElementById("fTagInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === ",") {
+    e.preventDefault();
+    const v = e.target.value.trim().replace(/,$/, "");
+    if (v && !modalTags.includes(v)) { modalTags.push(v); renderModalTags(); }
+    e.target.value = "";
+  } else if (e.key === "Backspace" && !e.target.value && modalTags.length) {
+    modalTags.pop(); renderModalTags();
+  }
+});
+document.getElementById("formSaveBtn").addEventListener("click", () => {
+  const name = document.getElementById("fName").value.trim();
+  const system = document.getElementById("fSystem").value;
+  const assetType = document.getElementById("fAssetType").value;
+  const domain = document.getElementById("fDomain").value;
+  const group = document.getElementById("fGroup").value.trim();
+  const scheduleCron = document.getElementById("fCron").value.trim() || null;
+  const isEnabled = document.getElementById("fEnabled").checked;
+
+  if (!name || !system || !group) {
+    document.getElementById("formError").classList.add("show");
+    return;
+  }
+
+  // "table"/"cube" live in datasets[] (they carry recordCount); everything else is a pipelines[] run.
+  const targetKey = (assetType === "table" || assetType === "cube") ? "datasets" : "pipelines";
+
+  const snap = liveData;
+  if (modalMode === "edit") {
+    let existing = null;
+    for (const key of ["pipelines", "datasets"]) {
+      const idx = snap[key].findIndex(x => x.id === modalEditingId);
+      if (idx !== -1) { existing = snap[key].splice(idx, 1)[0]; break; }
+    }
+    if (existing) {
+      existing.name = name; existing.system = system; existing.assetType = assetType; existing.domain = domain;
+      existing.group = group; existing.tags = [...modalTags]; existing.scheduleCron = scheduleCron; existing.isEnabled = isEnabled;
+      if (targetKey === "datasets" && existing.recordCount === undefined) {
+        existing.recordCount = null; existing.recordCountPrevious = null; existing.recordCountDelta = null;
+      }
+      snap[targetKey].push(existing);
+    }
+  } else {
+    const created = {
+      id: system + ":" + slugify(name) + ":" + Date.now().toString(36),
+      name, system, assetType, domain, group, tags: [...modalTags],
+      status: "unknown", sourceStatus: null, statusReason: null,
+      lastRunAt: null, lastRunEndedAt: null, lastSuccessAt: null,
+      durationMs: null, avgDurationMs: null, expectedDurationMs: null,
+      nextRunAt: null, nextRunSource: "unknown", scheduleCron, timezone: "America/New_York",
+      runId: null, runUrl: null, consecutiveFailures: 0, isEnabled, isStale: true, asOf: null
+    };
+    if (targetKey === "datasets") { created.recordCount = null; created.recordCountPrevious = null; created.recordCountDelta = null; }
+    snap[targetKey].push(created);
+  }
+
+  snap.sections.pipelines.itemCount = activeAssets(snap, "pipelines").length;
+  snap.sections.datasets.itemCount = activeAssets(snap, "datasets").length;
+  closeAssetModal();
+  renderPipelines(snap);
+  renderDatasets(snap);
+  renderOverview(snap);
+  document.getElementById("tabNPipelines").textContent = activeAssets(snap, "pipelines").length;
+  document.getElementById("tabNDatasets").textContent = activeAssets(snap, "datasets").length;
+});
+
+render();
+</script>

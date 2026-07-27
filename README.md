@@ -2,9 +2,11 @@
 
 Static UI mockup for a Vortex-hosted overview dashboard that tracks pipeline
 health and business KPIs in one place, with a severity-ranked alert banner
-at the top. Nothing here is wired to live data yet — all values in
-`MissionControl.jsx` are hardcoded mocks meant to validate the layout and
-interaction model before backend work starts.
+at the top. Nothing here is wired to live data yet — `console/index.html`
+runs entirely against the sample fixtures in `sample-data/`, meant to
+validate the layout and interaction model before backend work starts. (The
+originally-planned React component, `MissionControl.jsx`, was never
+committed — `console/index.html` is the working build in its place.)
 
 ## Stack
 
@@ -64,6 +66,14 @@ unified snapshot schema, with two sample fixtures in `sample-data/`:
 - [`inactive-snapshot.json`](sample-data/inactive-snapshot.json) — the
   "nothing connected yet" state, for the disconnected/placeholder UI before
   any collector exists.
+
+[`console/index.html`](console/index.html) is a working build of the
+console against `active-snapshot.json` — Overview, Datasets (Azure/Fabric
+Tables + Cubes, record counts and deltas), Pipelines, Power BI, and
+Business KPIs, with grouping, tag filtering, search, and an Add/Edit-source
+flow. Self-contained, no build step: open the file directly in a browser.
+This is the real frontend to extend in Phase 5 of the roadmap below, not a
+throwaway mock.
 
 For actually building the backend: [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md)
 is the sequenced, phase-by-phase plan (a human-readable build order with
