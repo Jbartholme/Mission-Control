@@ -20,7 +20,11 @@ Single-file component: `MissionControl.jsx`. Sections, top to bottom:
   Sorts a flat `alerts` array by severity (`critical` > `warning` > `info`)
   and always leads with the worst one.
 - **`Overview`** — summary stat cards, a "systems pulse" strip (one dot per
-  monitored asset, grouped by domain), recent alerts, and a KPI snapshot.
+  monitored asset, grouped by `group`), recent alerts, and a KPI snapshot.
+- **`Datasets`** — Azure Tables, Fabric Tables, and Cubes, grouped
+  accordingly. Each card shows a record count and the delta since the prior
+  refresh; a record count of `0` is always flagged, independent of the
+  refresh job's own status.
 - **`Pipelines`** — ADF pipeline / Fabric notebook / Skyvern job status
   cards (status, last run, duration, next run).
 - **`PowerBI`** — dataset refresh cards shaped after the Power BI REST API's
@@ -36,6 +40,7 @@ no routing.
 | Section | Mock source | Real source to wire up |
 |---|---|---|
 | Pipelines | `pipelines` array | ADF pipeline-run REST API, or a landing table if one already exists |
+| Datasets | `datasets` array | Azure Table Storage / Fabric / cube row-count APIs, polled alongside refresh status |
 | Power BI | `pbiDatasets` array | Power BI REST API — Get Refresh History (per dataset or admin-scoped) |
 | Capital Markets | `capitalMarkets` array | `Cube.CapitalMarkets` warehouse view |
 | Call Center | `callCenter` array | `dbo.CallVolume` warehouse view |
@@ -47,6 +52,25 @@ Open questions to settle before wiring:
   landing table already being populated?
 - Should alert severity thresholds be configurable per metric, or a fixed
   rule set to start?
+
+See [`docs/data-architecture.md`](docs/data-architecture.md) for a proposed
+answer to both, plus storage design, connection/auth patterns per system,
+and a polling strategy for keeping the dashboard current. It defines a
+unified snapshot schema, with two sample fixtures in `sample-data/`:
+
+- [`active-snapshot.json`](sample-data/active-snapshot.json) — a populated,
+  "connected" snapshot (mixed statuses, a failed job, a threshold breach)
+  for building and demoing the live/interactive UI.
+- [`inactive-snapshot.json`](sample-data/inactive-snapshot.json) — the
+  "nothing connected yet" state, for the disconnected/placeholder UI before
+  any collector exists.
+
+For actually building the backend: [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md)
+is the sequenced, phase-by-phase plan (a human-readable build order with
+dependencies and "done when" checks per phase). If handing the build to an
+AI coding agent, [`docs/cursor-build-prompt.md`](docs/cursor-build-prompt.md)
+is a ready-to-paste prompt written to make the agent ask for the real
+source list, credentials, and hosting target before it generates anything.
 
 ## Running locally
 
