@@ -8,6 +8,14 @@ validate the layout and interaction model before backend work starts. (The
 originally-planned React component, `MissionControl.jsx`, was never
 committed — `console/index.html` is the working build in its place.)
 
+**This repo also hosts other domains in a larger data-health ecosystem,**
+each in its own top-level folder under `domains/`, deliberately separate
+from Mission Control — own schema, own docs, own sample data, no shared
+code. Mission Control itself is that ecosystem's Power BI/Fabric domain;
+see [`domains/sql/`](domains/sql/) for the first other one (Azure SQL
+Server: blank-table checks, stored-proc schedule checks, and cross-domain
+reconciliation against Dialer/Website/Salesforce).
+
 ## Stack
 
 - React (function components + hooks, no external state library)
