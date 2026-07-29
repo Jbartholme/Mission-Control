@@ -16,6 +16,14 @@ see [`domains/sql/`](domains/sql/) for the first other one (Azure SQL
 Server: blank-table checks, stored-proc schedule checks, and cross-domain
 reconciliation against Dialer/Website/Salesforce).
 
+[`overview/index.html`](overview/index.html) is the shared shell for that
+ecosystem — sidebar nav, one page per domain, a severity-sorted alert
+banner aggregated across all of them. Only SQL is wired to real (sample)
+data today; Website/Dialer/Salesforce show as "not connected yet" until
+those domains exist, and Power BI/Fabric links out to Mission Control
+rather than duplicating it. Self-contained, no build step — open directly
+in a browser, same as Mission Control's own console.
+
 ## Stack
 
 - React (function components + hooks, no external state library)
