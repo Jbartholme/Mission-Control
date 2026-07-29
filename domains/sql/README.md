@@ -8,7 +8,10 @@ output eventually gets checked against what actually landed here — and the
 only domain with authority to fix anything, scoped strictly to its own
 walls (rerun a proc, clear a lock; never reaches into another domain).
 
-Separate from [Mission Control](../../README.md) (Power BI/Fabric domain)
-on purpose — same repo for convenience, no shared schema, no shared
-console. See [`docs/architecture.md`](docs/architecture.md) for the design
-and [`schema.sql`](schema.sql) for the Azure SQL Server DDL.
+Its data model is separate from Mission Control's on purpose — own schema
+(`dh`), no shared tables — but the *console* is unified: SQL is a page in
+[`../../console/index.html`](../../console/index.html) alongside the
+Power BI/Fabric pages (Datasets, Pipelines, Power BI, Business KPIs), one
+sidebar, one aggregated alert banner. See
+[`docs/architecture.md`](docs/architecture.md) for the design and
+[`schema.sql`](schema.sql) for the Azure SQL Server DDL.

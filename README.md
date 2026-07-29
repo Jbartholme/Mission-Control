@@ -8,21 +8,17 @@ validate the layout and interaction model before backend work starts. (The
 originally-planned React component, `MissionControl.jsx`, was never
 committed — `console/index.html` is the working build in its place.)
 
-**This repo also hosts other domains in a larger data-health ecosystem,**
-each in its own top-level folder under `domains/`, deliberately separate
-from Mission Control — own schema, own docs, own sample data, no shared
-code. Mission Control itself is that ecosystem's Power BI/Fabric domain;
-see [`domains/sql/`](domains/sql/) for the first other one (Azure SQL
+**This repo also hosts other domains in a larger data-health ecosystem.**
+Each domain's *data model* stays separate — its own folder under
+`domains/`, own schema, own docs, own sample data, no shared tables — but
+as of this build, the *console* is unified: one app, one sidebar nav, one
+severity-sorted alert banner aggregated across every domain. See
+[`domains/sql/`](domains/sql/) for the first other domain (Azure SQL
 Server: blank-table checks, stored-proc schedule checks, and cross-domain
-reconciliation against Dialer/Website/Salesforce).
-
-[`overview/index.html`](overview/index.html) is the shared shell for that
-ecosystem — sidebar nav, one page per domain, a severity-sorted alert
-banner aggregated across all of them. Only SQL is wired to real (sample)
-data today; Website/Dialer/Salesforce show as "not connected yet" until
-those domains exist, and Power BI/Fabric links out to Mission Control
-rather than duplicating it. Self-contained, no build step — open directly
-in a browser, same as Mission Control's own console.
+reconciliation against Dialer/Website/Salesforce) — its page lives in
+`console/index.html` alongside Mission Control's own. Website, Dialer, and
+Salesforce show as "not connected yet" in the sidebar until those domains
+exist; nothing is faked.
 
 ## Stack
 
@@ -49,9 +45,12 @@ Single-file component: `MissionControl.jsx`. Sections, top to bottom:
   refresh-history response (status, refresh type, duration).
 - **`BusinessKPIs`** — Capital Markets (`Cube.CapitalMarkets`) and Call
   Center (`dbo.CallVolume`) metric tiles.
+- **`SQL`** — a separate domain ([`domains/sql/`](domains/sql/)), folded
+  into the same console as its own sidebar page: not-blank checks on
+  tables/views, stored-proc schedule checks, and cross-domain
+  reconciliation against Dialer/Website/Salesforce.
 
-Tab state is local (`useState`) in the root `MissionControl` export; there's
-no routing.
+Sidebar nav, one page active at a time; state is local, no routing.
 
 ## Mock data → real data (next steps)
 
@@ -84,12 +83,12 @@ unified snapshot schema, with two sample fixtures in `sample-data/`:
   any collector exists.
 
 [`console/index.html`](console/index.html) is a working build of the
-console against `active-snapshot.json` — Overview, Datasets (Azure/Fabric
-Tables + Cubes, record counts and deltas), Pipelines, Power BI, and
-Business KPIs, with grouping, tag filtering, search, and an Add/Edit-source
-flow. Self-contained, no build step: open the file directly in a browser.
-This is the real frontend to extend in Phase 5 of the roadmap below, not a
-throwaway mock.
+console against `active-snapshot.json` and `domains/sql/sample-data/`:
+Overview, Datasets (Azure/Fabric Tables + Cubes, record counts and
+deltas), Pipelines, Power BI, Business KPIs, and SQL, with grouping, tag
+filtering, search, and an Add/Edit-source flow. Self-contained, no build
+step: open the file directly in a browser. This is the real frontend to
+extend in Phase 5 of the roadmap below, not a throwaway mock.
 
 For actually building the backend: [`docs/implementation-roadmap.md`](docs/implementation-roadmap.md)
 is the sequenced, phase-by-phase plan (a human-readable build order with
